@@ -15,108 +15,99 @@ namespace Hackerman
     {
         static void Main(string[] args)
         {
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Select username");
-            string Username = Console.ReadLine();
-            MainMenu();
-
-            void MainMenu()
+           Console.ForegroundColor = ConsoleColor.Green;
+           Console.WriteLine("Select username");
+           string Username = Console.ReadLine();
+            while (true)
             {
-            begin:
-                Console.Clear();
-                Console.WriteLine("Welcome: " + Username + " to test P2P hacking game");
-                Console.WriteLine("Do you want to check information, create a session or join a session?");
-                Console.WriteLine("create a session: C or Create");
-                Console.WriteLine("join a session: J or Join");
-                Console.WriteLine("information: inf, info or information");
-                string command = Console.ReadLine().ToLower();
-
-                if (command != "c" && command != "create" && command != "j" && command != "join" && command != "inf" && command != "info" && command != "information")
-                {
-                    Console.Clear();
-                    Console.WriteLine("Invalid command input, returning to main menu.");
-                    Console.ReadLine();
-                    goto begin;
-                }
-                else
-                {
-                    Initialize(command);
-                }
-            }
-            void Initialize(string pickedCommand)
-            {
-
-                Console.Clear();
-                Console.WriteLine("Command chosen: " + pickedCommand);
-                Console.Read();
-                switch (pickedCommand)
-                {
-                    case "c":
-                    case "create":
-                        CreateSession();
-                        break;
-                    case "j":
-                    case "join":
-                        JoinSession();
-                        break;
-                    case "inf":
-                    case "info":
-                    case "information":
-                        InfoMenu();
-                        break;
-
-                }
-            }
-            void InfoMenu()
-            {
-
-            }
-            void JoinSession()
-            {
-
-            }
-            void CreateSession()
-            {
-                Process p = new Process();
-                string dir = Directory.GetCurrentDirectory();
-                p.StartInfo.FileName = Path.Combine(dir + @"\Server.exe");
-                p.StartInfo.Arguments = "echo Hello!";
-                p.StartInfo.CreateNoWindow = false;
-                p.Start();
-
                 Client client = null;
+                Console.Clear();
+                MainMenu();
 
-
-                Console.WriteLine("Trying to connect to server...");
-                try
+                void MainMenu()
                 {
-                    Int32 port = 13000;
-                    IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+                    begin:
                     Console.Clear();
-                    client = new Client(port, "127.0.0.1");
-                    Console.WriteLine("Connected to local server...");
-                }
-                catch
-                {
+                    Console.WriteLine("Welcome: " + Username + " to test P2P hacking game");
+                    Console.WriteLine("Do you want to check information, create a session or join a session?");
+                    Console.WriteLine("create a session: C or Create");
+                    Console.WriteLine("join a session: J or Join");
+                    Console.WriteLine("information: inf, info or information");
+                    string command = Console.ReadLine().ToLower();
 
-                }
-                while (true)
-                {
-                    Console.WriteLine();
-                    Console.Write("Input: ");
-                    string input = Console.ReadLine().ToLower();
-                    switch (input)
+                    if (command != "c" && command != "create" && command != "j" && command != "join" && command != "inf" && command != "info" && command != "information")
                     {
-                        case "test":
-                            client.SendData(new byte[] { 23 });
-                            break;
+                        Console.Clear();
+                        Console.WriteLine("Invalid command input, returning to main menu.");
+                        Console.ReadLine();
+                        goto begin;
+                    }
+                    else
+                    {
+                        Initialize(command);
                     }
                 }
-            }
-            void PlayGame()
-            {
+                void Initialize(string pickedCommand)
+                {
 
+                    Console.Clear();
+                    Console.WriteLine("Command chosen: " + pickedCommand);
+                    Console.Read();
+                    switch (pickedCommand)
+                    {
+                        case "c":
+                        case "create":
+                            CreateSession();
+                            break;
+                        case "j":
+                        case "join":
+                            JoinSession();
+                            break;
+                        case "inf":
+                        case "info":
+                        case "information":
+                            InfoMenu();
+                            break;
+
+                    }
+                }
+                void InfoMenu()
+                {
+
+                }
+                void JoinSession()
+                {
+
+                }
+                void CreateSession()
+                {
+                    Process p = new Process();
+                    string dir = Directory.GetCurrentDirectory();
+                    p.StartInfo.FileName = Path.Combine(dir + @"\Server.exe");
+                    p.StartInfo.Arguments = "echo Hello!";
+                    p.StartInfo.CreateNoWindow = false;
+                    p.Start();
+                    Console.WriteLine("Trying to connect to server...");
+                    try
+                    {
+                        Int32 port = 13000;
+                        IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+                        Console.Clear();
+                        client = new Client(port, "127.0.0.1");
+                        Console.WriteLine("Connected to local server...");
+                    }
+                    catch
+                    {
+
+                    }
+                    while (true)
+                    {
+                    }
+                }
+                void PlayGame()
+                {
+
+                }
             }
         }
         public class Client : IDisposable
@@ -138,8 +129,13 @@ namespace Hackerman
                 _shutdownEvent = new AutoResetEvent(false);
                 _receiver = new Receiver(_stream, ref _shutdownEvent);
                 _sender = new Sender(_stream, ref _shutdownEvent);
+                IsDisposed = false;
 
                 _receiver.DataReceived += OnDataReceived;
+            }
+            ~Client()
+            {
+                Dispose();
             }
             private TcpClient _client;
             private NetworkStream _stream;
@@ -157,6 +153,7 @@ namespace Hackerman
                 if (!this.IsDisposed)
                 {
                     this.IsDisposed = true;
+                    this.Dispose();
                     this._stream.Dispose();
                     this._stream = null;
                 }
@@ -197,7 +194,10 @@ namespace Hackerman
                                     int readData = _stream.Read(_data, 0, _data.Length);
                                     if (readData > 0)
                                     {
-
+                                        if(_data[0] == 200)
+                                        {
+                                            _stream.Write(new byte[] {200}, 0, 1);
+                                        }
                                     }
                                     else
                                     {
@@ -225,15 +225,7 @@ namespace Hackerman
                 private Thread _thread;
                 private AutoResetEvent ShutdownEvent;
             }
-            void deCodeData(byte[] data)
-            {
-                switch (data[1])
-                {
-                    case 1:
 
-                        break;
-                }
-            }
             private sealed class Sender
             {
                 internal void SendData(byte[] data)
@@ -257,8 +249,20 @@ namespace Hackerman
                         {
                             if (_sendData.Length > 0)
                             {
-                                _stream.Write(_sendData, 0, _sendData.Length);
-                                _sendData = null;
+                                try
+                                {
+                                    _stream.Write(_sendData, 0, _sendData.Length);
+                                    _sendData = null;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.Clear();
+                                    Console.WriteLine(ex.Message);
+                                    Console.WriteLine("The server has closed down due to an unknown cause, shutting down");
+                                    Console.ReadLine();
+                                    Environment.Exit(0);
+                                }
+
                             }
                             else
                             {

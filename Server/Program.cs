@@ -42,13 +42,10 @@ namespace Server
             {
                 server.Stop();
             }
-            byte[] client1Data = new byte[1024];
-            byte[] client2Data = new byte[1024];
-
             //Initializing multithread stuff
             Thread checkThread = new Thread(checkConnection);
-            Thread client1Read = new Thread(() => readServer(client1, client1Data));
-            Thread client1Write = new Thread(() => writeServer(client1, client1Data));
+            Thread client1Read = new Thread(() => readServer(client1));
+            Thread client1Write = new Thread(() => writeServer(client1));
             //Thread client2Read = new Thread(() => readServer(client1));
             //Thread client2Write = new Thread(() => writeServer(client2));
 
@@ -58,8 +55,9 @@ namespace Server
             //client2Write.Start();
             checkThread.Start();
 
-            void readServer(TcpClient client, byte[] _data)
+            void readServer(TcpClient client)
             {
+                byte[] _data = new byte[255];
                 NetworkStream _stream = client.GetStream();
                 while (true)
                 {
@@ -80,6 +78,9 @@ namespace Server
                                     case 23:
                                         Console.WriteLine("test recieved!!");
                                         break;
+                                    case 200:
+                                        Console.WriteLine("Client alive");
+                                        break;
                                 }
                                 Console.WriteLine(myCompleteMessage);
                             }
@@ -92,7 +93,7 @@ namespace Server
                 }
             }
 
-            void writeServer(TcpClient client, byte[] _data)
+            void writeServer(TcpClient client)
             {
                 client.GetStream().Write(new byte[] { 1, 2, 3 }, 0, 3);
             }
@@ -100,13 +101,18 @@ namespace Server
             {
                 while (true)
                 {
-                    if (!client1.Connected)
+                    try
                     {
-                        Console.WriteLine("wha?");
+                        client1.GetStream().Write(new byte[]{200}, 0, 1);
+                    }
+                    catch (Exception ex)
+                    {
                         server.Stop();
                         Environment.Exit(0);
                     }
+                    Thread.Sleep(5000);
                 }
+
             }
             async void test()
             {
