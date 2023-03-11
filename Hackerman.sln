@@ -6,9 +6,12 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hackerman", "Hackerman\Hackerman.csproj", "{4FC0E247-E42E-4756-B939-A50B86A32DBA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{96348E0B-5CCB-4929-942D-E16D66C6A22F} = {96348E0B-5CCB-4929-942D-E16D66C6A22F}
+		{AA86E7FF-D522-489F-8431-B02957617E32} = {AA86E7FF-D522-489F-8431-B02957617E32}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{96348E0B-5CCB-4929-942D-E16D66C6A22F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Output", "Output\Output.csproj", "{AA86E7FF-D522-489F-8431-B02957617E32}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +27,10 @@ Global
 		{96348E0B-5CCB-4929-942D-E16D66C6A22F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96348E0B-5CCB-4929-942D-E16D66C6A22F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96348E0B-5CCB-4929-942D-E16D66C6A22F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA86E7FF-D522-489F-8431-B02957617E32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA86E7FF-D522-489F-8431-B02957617E32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA86E7FF-D522-489F-8431-B02957617E32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA86E7FF-D522-489F-8431-B02957617E32}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -21,6 +21,7 @@ namespace Hackerman
             while (true)
             {
                 Client client = null;
+                TcpClient outPutClient = null;
                 Console.Clear();
                 MainMenu();
 
@@ -52,7 +53,6 @@ namespace Hackerman
 
                     Console.Clear();
                     Console.WriteLine("Command chosen: " + pickedCommand);
-                    Console.Read();
                     switch (pickedCommand)
                     {
                         case "c":
@@ -81,19 +81,18 @@ namespace Hackerman
                 }
                 void CreateSession()
                 {
-                    Process p = new Process();
                     string dir = Directory.GetCurrentDirectory();
-                    p.StartInfo.FileName = Path.Combine(dir + @"\Server.exe");
-                    p.StartInfo.Arguments = "echo Hello!";
-                    p.StartInfo.CreateNoWindow = false;
-                    p.Start();
+                    Process pr = new Process();
+                    pr.StartInfo.FileName = Path.Combine(dir + @"\Output.exe");
+                    pr.StartInfo.Arguments = "echo Hello!";
+                    pr.StartInfo.CreateNoWindow = false;
+                    pr.Start();
                     Console.WriteLine("Trying to connect to server...");
                     try
                     {
-                        Int32 port = 13000;
-                        IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+                        Int32 port = 1300;
                         Console.Clear();
-                        client = new Client(port, "127.0.0.1");
+                        client = new Client(port, "130.61.171.190");
                         Console.WriteLine("Connected to local server...");
                     }
                     catch
@@ -102,6 +101,14 @@ namespace Hackerman
                     }
                     while (true)
                     {
+                        Console.Write("Input: ");
+                        string command = Console.ReadLine().ToLower();
+                        switch (command)
+                        {
+                            case "status":
+                                client.SendData(new byte[] { 1 });
+                                break;
+                        }
                     }
                 }
                 void PlayGame()
@@ -124,10 +131,12 @@ namespace Hackerman
 
             public Client(Int32 port, string IP)
             {
+                _output = new TcpClient("127.0.0.1", 3856);
                 _client = new TcpClient(IP, port);
+                _outPutStream = _output.GetStream();
                 _stream = _client.GetStream();
                 _shutdownEvent = new AutoResetEvent(false);
-                _receiver = new Receiver(_stream, ref _shutdownEvent);
+                _receiver = new Receiver(_stream, _outPutStream, ref _shutdownEvent);
                 _sender = new Sender(_stream, ref _shutdownEvent);
                 IsDisposed = false;
 
@@ -140,7 +149,8 @@ namespace Hackerman
             private TcpClient _client;
             private NetworkStream _stream;
             private AutoResetEvent _shutdownEvent;
-
+            private TcpClient _output;
+            private NetworkStream _outPutStream;
             private void OnDataReceived(object sender, DataReceivedEventArgs e)
             {
                 var handler = DataReceived;
@@ -162,14 +172,15 @@ namespace Hackerman
             {
                 internal event EventHandler<DataReceivedEventArgs> DataReceived;
 
-                internal Receiver(NetworkStream stream, ref AutoResetEvent resetEv)
+                internal Receiver(NetworkStream stream, NetworkStream outPut, ref AutoResetEvent resetEv)
                 {
+
+                    _output = outPut;
                     _stream = stream;
                     _thread = new Thread(Run);
                     _thread.Start();
                     ShutdownEvent = resetEv;
                 }
-                int i = 1;
 
                 private void Run()
                 {
@@ -198,6 +209,17 @@ namespace Hackerman
                                         {
                                             _stream.Write(new byte[] {200}, 0, 1);
                                         }
+                                        else
+                                        {
+                                            try
+                                            {
+                                                _output.Write(_data, 0, _data.Length);
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                Console.WriteLine(e);
+                                            }
+                                        }
                                     }
                                     else
                                     {
@@ -220,7 +242,7 @@ namespace Hackerman
                         _stream.Close();
                     }
                 }
-
+                private NetworkStream _output;
                 private NetworkStream _stream;
                 private Thread _thread;
                 private AutoResetEvent ShutdownEvent;

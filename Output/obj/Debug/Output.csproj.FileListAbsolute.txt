@@ -1,0 +1,11 @@
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\bin\Debug\Output.exe.config
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\bin\Debug\Output.exe
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\bin\Debug\Output.pdb
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\obj\Debug\Output.csproj.AssemblyReference.cache
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\obj\Debug\Output.csproj.SuggestedBindingRedirects.cache
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\obj\Debug\Output.csproj.CoreCompileInputs.cache
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\obj\Debug\Output.exe
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\obj\Debug\Output.pdb
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Hackerman\bin\Debug\Output.exe.config
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Hackerman\bin\Debug\Output.exe
+C:\Users\Isak.Nilsson7\source\repos\Hackerman\Hackerman\bin\Debug\Output.pdb
