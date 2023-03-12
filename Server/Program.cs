@@ -19,44 +19,32 @@ namespace Server
 
             // TcpListener server = new TcpListener(port);
             TcpListener server = new TcpListener(localAddr, port);
-            server.Start();
-            Console.WriteLine("Waiting for connection...");
-            TcpClient client1 = null;
-            TcpClient client2 = null;
-            try
-            {
-                Console.WriteLine("Waiting for connection...");
-
-                client1 = server.AcceptTcpClient();
-                Console.WriteLine("Connected!");
-            }
-            catch
-            {
-
-            }
-            while (!client1.Connected)
-            {
-
-            }
-            if (!client1.Connected)
-            {
-                server.Stop();
-            }
-            int health = 100;
-            int health2 = 100;
             //Initializing multithread stuff
-            Thread checkThread = new Thread(checkConnection);
-            Thread client1Read = new Thread(() => readServer(client1));
+            Thread waitConnection = new Thread(() => awaitConnection());
             //Thread client1Write = new Thread(() => writeServer(client1));
             //Thread client2Read = new Thread(() => readServer(client1));
             //Thread client2Write = new Thread(() => writeServer(client2));
 
-            client1Read.Start();
+            waitConnection.Start();
             //client1Write.Start();
             //client2Read.Start();
             //client2Write.Start();
-            checkThread.Start();
+            void awaitConnection()
+            {
+                while (true)
+                {
+                    try
+                    {
+                        TcpClient client = server.AcceptTcpClient();
+                        Thread readClient = new Thread(() => readServer(client));
+                        readClient.Start();
+                    }
+                    catch (Exception ex)
+                    {
 
+                    }
+                }
+            }
             void readServer(TcpClient client)
             {
                 NetworkStream _stream = client.GetStream();
@@ -95,37 +83,208 @@ namespace Server
                     }
                 }
             }
-
             void writeServer(TcpClient client, byte instruction)
             {
-                Console.WriteLine("Input recieved: " + instruction);
                 switch (instruction)
                 {
                     case 1:
-                        client.GetStream().Write(new byte[] { 1, (byte)health }, 0, 2);
+                        client.GetStream().Write(new byte[] { 1 }, 0, 2);
                         break;
                 }
+            }
+
+            async void test()
+            {
+
+            }
+        }
+        class Room
+        {
+            public Room(int maxPlayers, TcpListener server)
+            {
+                _maxPlayers = maxPlayers;
+                _state = RoomState.instantiated;
+                _clients = new SafeList<ConnectedClient>();
+                _server = server;
+            }
+            void initiate(TcpClient host)
+            {
+                _state = RoomState.settup;
+                addPlayer(host);
+            }
+            void addPlayer(TcpClient client)
+            {
+                if(_state != RoomState.playing && _clients.Count > _maxPlayers)
+                {
+                    _clients.Add(new ConnectedClient(client));
+                }
+            }
+            void playerDisconnect()
+            {
+
+            }
+            internal class ConnectedClient
+            {
+                public ConnectedClient(TcpClient client)
+                {
+                    _client = client;
+                    health = 100;
+                }
+                void writeClient(byte instruction)
+                {
+                    Console.WriteLine("Input recieved: " + instruction);
+                    switch (instruction)
+                    {
+                        case 1:
+                            Client.GetStream().Write(new byte[] { 1, (byte)Health }, 0, 2);
+                            break;
+                    }
+                }
+                void readRoom()
+                {
+                    NetworkStream _stream = Client.GetStream();
+                    while (true)
+                    {
+                        try
+                        {
+                            byte[] _data = new byte[255];
+                            if (!Client.GetStream().DataAvailable)
+                            {
+                                Thread.Sleep(1);
+                            }
+                            else
+                            {
+                                int readData = _stream.Read(_data, 0, _data.Length);
+                                if (readData > 0)
+                                {
+                                    switch (_data[0])
+                                    {
+                                        case 23:
+                                            Console.WriteLine("test recieved!!");
+                                            break;
+                                        case 1:
+                                            writeClient(1);
+                                            break;
+                                        case 200:
+                                            Console.WriteLine("Client alive");
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+                private TcpClient _client;
+                public TcpClient Client { get { return _client; } }
+                private int health;
+                public int Health { get { return health; } set { health = value; } }
+
             }
             void checkConnection()
             {
                 while (true)
                 {
-                    try
+                    foreach (var client in _clients.getCopyOfInternalList())
                     {
-                        client1.GetStream().Write(new byte[]{200}, 0, 1);
-                    }
-                    catch (Exception ex)
-                    {
-                        server.Stop();
-                        Environment.Exit(0);
+                        try
+                        {
+                            client.Client.GetStream().Write(new byte[] { 200 }, 0, 1);
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
                     }
                     Thread.Sleep(5000);
                 }
 
             }
-            async void test()
+            public enum RoomState
             {
+                instantiated,
+                settup,
+                waiting,
+                starting,
+                playing
+            }
+            int _maxPlayers;
+            SafeList<ConnectedClient> _clients;
+            TcpListener _server;
+            RoomState _state;
+        }
+        //Stole from pontus credit to him
+        public class SafeList<T>
+        {
+            private List<T> _internalList;
+            private bool isBusy = false;
+            public int Count
+            {
+                get
+                {
+                    while (isBusy) ;
+                    isBusy = true;
+                    int value = _internalList.Count;
+                    isBusy = false;
+                    return value;
+                }
+            }
 
+            public SafeList()
+            {
+                _internalList = new List<T>();
+            }
+
+            public void Add(T value)
+            {
+                while (isBusy) ;
+                isBusy = true;
+                _internalList.Add(value);
+                isBusy = false;
+            }
+            public void Remove(T value)
+            {
+                while (isBusy) ;
+                isBusy = true;
+                _internalList.Remove(value);
+                isBusy = false;
+            }
+            public void RemoveAt(int index)
+            {
+                while (isBusy) ;
+                isBusy = true;
+                _internalList.RemoveAt(index);
+                isBusy = false;
+            }
+
+            public List<T> getCopyOfInternalList()
+            {
+                while (isBusy) ;
+                isBusy = true;
+                List<T> copyList = new List<T>(_internalList);
+                isBusy = false;
+                return copyList;
+            }
+
+            public T GetAt(int index)
+            {
+                while (isBusy) ;
+                isBusy = true;
+                T value = _internalList[index];
+                isBusy = false;
+                return value;
+            }
+
+            public int GetCount()
+            {
+                while (isBusy) ;
+                isBusy = true;
+                int value = _internalList.Count;
+                isBusy = false;
+                return value;
             }
         }
     }

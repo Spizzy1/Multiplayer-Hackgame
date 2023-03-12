@@ -117,6 +117,20 @@ namespace Hackerman
                 }
             }
         }
+        public static class GameConsole
+        {
+            static string Write(List<string> info)
+            {
+                Console.Clear();
+                foreach(string item in info)
+                {
+                    Console.WriteLine(item);
+                }
+                Console.WriteLine();
+                Console.Write("Input: ");
+                return Console.ReadLine();
+            }
+        }
         public class Client : IDisposable
         {
 
