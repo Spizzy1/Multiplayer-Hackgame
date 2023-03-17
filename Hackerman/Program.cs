@@ -27,7 +27,7 @@ namespace Hackerman
 
                 void MainMenu()
                 {
-                    begin:
+                begin:
                     Console.Clear();
                     Console.WriteLine("Welcome: " + Username + " to test P2P hacking game");
                     Console.WriteLine("Do you want to check information, create a session or join a session?");
@@ -81,12 +81,14 @@ namespace Hackerman
                 }
                 void CreateSession()
                 {
+                    Console.WriteLine("dhaouwdawouh");
+                    Thread.Sleep(1000);
                     string dir = Directory.GetCurrentDirectory();
-                    Process pr = new Process();
+                    /*Process pr = new Process();
                     pr.StartInfo.FileName = Path.Combine(dir + @"\Output.exe");
                     pr.StartInfo.Arguments = "echo Hello!";
                     pr.StartInfo.CreateNoWindow = false;
-                    pr.Start();
+                    pr.Start();*/
                     Console.WriteLine("Trying to connect to server...");
                     try
                     {
@@ -94,21 +96,15 @@ namespace Hackerman
                         Console.Clear();
                         client = new Client(port, "130.61.171.190");
                         Console.WriteLine("Connected to local server...");
+                        Thread.Sleep(1000);
                     }
-                    catch
+                    catch (Exception e)
                     {
-
+                        Console.WriteLine(e);
                     }
                     while (true)
                     {
-                        Console.Write("Input: ");
-                        string command = Console.ReadLine().ToLower();
-                        switch (command)
-                        {
-                            case "status":
-                                client.SendData(new byte[] { 1 });
-                                break;
-                        }
+
                     }
                 }
                 void PlayGame()
@@ -119,18 +115,45 @@ namespace Hackerman
         }
         public static class GameConsole
         {
-            static string Write(List<string> info)
+            internal static List<string> gameLog = new List<string>();
+            public static void Write(List<string> info)
             {
                 Console.Clear();
-                foreach(string item in info)
+                gameLog.AddRange(info);
+                foreach (string item in gameLog)
                 {
                     Console.WriteLine(item);
                 }
+                gameLog.Add(" ");
+                gameLog.Add("------------------------------");
+                gameLog.Add(" ");
+                Console.WriteLine();
+            }
+            public static void Add(string input)
+            {
+                gameLog.Add(input);
+            }
+            public static void WriteSame(string add)
+            {
+                if(gameLog.Count != 0)
+                {
+                    gameLog[gameLog.Count - 1] += " " + add;
+                }
+                else
+                {
+                    gameLog.Add(add);
+                }
+            }
+            public static string Read()
+            {
                 Console.WriteLine();
                 Console.Write("Input: ");
                 return Console.ReadLine();
             }
         }
+        public delegate void sendData(byte index);
+
+        public static event sendData SendDataEvent;
         public class Client : IDisposable
         {
 
@@ -145,12 +168,12 @@ namespace Hackerman
 
             public Client(Int32 port, string IP)
             {
-                _output = new TcpClient("127.0.0.1", 3856);
-                _client = new TcpClient(IP, port);
-                _outPutStream = _output.GetStream();
+                //_output = new TcpClient("127.0.0.1", 3856);
+                _client = new TcpClient(IP, port);      
+                //_outPutStream = _output.GetStream();
                 _stream = _client.GetStream();
                 _shutdownEvent = new AutoResetEvent(false);
-                _receiver = new Receiver(_stream, _outPutStream, ref _shutdownEvent);
+                _receiver = new Receiver(_stream, ref _shutdownEvent);
                 _sender = new Sender(_stream, ref _shutdownEvent);
                 IsDisposed = false;
 
@@ -163,8 +186,6 @@ namespace Hackerman
             private TcpClient _client;
             private NetworkStream _stream;
             private AutoResetEvent _shutdownEvent;
-            private TcpClient _output;
-            private NetworkStream _outPutStream;
             private void OnDataReceived(object sender, DataReceivedEventArgs e)
             {
                 var handler = DataReceived;
@@ -178,7 +199,7 @@ namespace Hackerman
                 {
                     this.IsDisposed = true;
                     this.Dispose();
-                    this._stream.Dispose();
+                    this._stream?.Dispose();
                     this._stream = null;
                 }
             }
@@ -186,10 +207,9 @@ namespace Hackerman
             {
                 internal event EventHandler<DataReceivedEventArgs> DataReceived;
 
-                internal Receiver(NetworkStream stream, NetworkStream outPut, ref AutoResetEvent resetEv)
+                internal Receiver(NetworkStream stream, ref AutoResetEvent resetEv)
                 {
 
-                    _output = outPut;
                     _stream = stream;
                     _thread = new Thread(Run);
                     _thread.Start();
@@ -227,7 +247,32 @@ namespace Hackerman
                                         {
                                             try
                                             {
-                                                _output.Write(_data, 0, _data.Length);
+                                                Console.WriteLine(_data[0]);
+                                                List<string> writeList = new List<string>();
+                                                switch (_data[0])
+                                                {
+                                                    case 1:
+                                                        GameConsole.Add("Do you wish to create or join a room");
+                                                        GameConsole.Add("LOOSER!!!!");
+                                                        break;
+                                                    case 69:
+                                                        byte[] output = new byte[_data.Length-2];
+                                                        output = _data.Where(x => x != 00).ToArray();
+                                                        for(int i = 1; i < output.Length-1; i++)
+                                                        {
+                                                            output[i] = _data[i];
+                                                            Console.WriteLine(_data[i]);
+                                                        }
+
+                                                        GameConsole.Add(Decoder.Decode(output));
+                                                        break;
+                                                    case 3:
+                                                        GameConsole.Write(writeList);
+                                                        SendDataEvent?.Invoke(_data[1]);
+                                                        break;
+                                                }
+                                               
+
                                             }
                                             catch (Exception e)
                                             {
@@ -268,6 +313,25 @@ namespace Hackerman
                 {
                     _sendData = data;
                 }
+                internal void SendPartial(byte index)
+                {
+                    string input = GameConsole.Read();
+                    switch (index)
+                    {
+                        case 1:
+                            switch (input.ToLower())
+                            {
+                                case "create":
+                                    SendData(new byte[] { 2, 1 });
+                                    break;
+                                case "join":
+                                    SendData(new byte[] { 2, 2 });
+                                    break;
+                            }
+                            break;
+                    }
+
+                }
 
                 internal Sender(NetworkStream stream, ref AutoResetEvent resetEv)
                 {
@@ -275,6 +339,7 @@ namespace Hackerman
                     _thread = new Thread(Run);
                     _thread.Start();
                     ShutdownEvent = resetEv;
+                    SendDataEvent += SendPartial;
                 }
 
                 private void Run()

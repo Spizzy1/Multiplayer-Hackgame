@@ -38,6 +38,7 @@ namespace Server
                         TcpClient client = server.AcceptTcpClient();
                         Thread readClient = new Thread(() => readServer(client));
                         readClient.Start();
+                        writeServer(client, 1);
                     }
                     catch (Exception ex)
                     {
@@ -70,6 +71,19 @@ namespace Server
                                     case 1:
                                         writeServer(client, 1);
                                         break;
+                                    case 2:
+                                        if(_data.Length >= 2)
+                                        {
+                                            if(_data[1] == 1)
+                                            {
+
+                                            }
+                                            else
+                                            {
+
+                                            }
+                                        }
+                                        break;
                                     case 200:
                                         Console.WriteLine("Client alive");
                                         break;
@@ -88,7 +102,7 @@ namespace Server
                 switch (instruction)
                 {
                     case 1:
-                        client.GetStream().Write(new byte[] { 1 }, 0, 2);
+                        client.GetStream().Write(new byte[] { 1 }, 0, 1);
                         break;
                 }
             }
@@ -111,6 +125,25 @@ namespace Server
             {
                 _state = RoomState.settup;
                 addPlayer(host);
+                _host = host;
+                waitForPlayers();
+
+            }
+            void waitForPlayers()
+            {
+                _state = RoomState.waiting;
+                int time = DateTime.Now.Millisecond;
+                int saveCount = _clients.Count;
+
+                Console.WriteLine("Waiting for player " + _clients.Count+1);
+                while (DateTime.Now.Millisecond - time < 20000 && _clients.Count != _maxPlayers)
+                {
+                    if (_clients.Count > saveCount)
+                    {
+                        time = DateTime.Now.Millisecond;
+                    }
+                }
+                return; 
             }
             void addPlayer(TcpClient client)
             {
@@ -213,6 +246,7 @@ namespace Server
             }
             int _maxPlayers;
             SafeList<ConnectedClient> _clients;
+            TcpClient _host;
             TcpListener _server;
             RoomState _state;
         }
