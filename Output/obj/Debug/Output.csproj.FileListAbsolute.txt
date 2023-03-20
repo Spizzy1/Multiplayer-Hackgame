@@ -9,3 +9,10 @@ C:\Users\Isak.Nilsson7\source\repos\Hackerman\Output\obj\Debug\Output.pdb
 C:\Users\Isak.Nilsson7\source\repos\Hackerman\Hackerman\bin\Debug\Output.exe.config
 C:\Users\Isak.Nilsson7\source\repos\Hackerman\Hackerman\bin\Debug\Output.exe
 C:\Users\Isak.Nilsson7\source\repos\Hackerman\Hackerman\bin\Debug\Output.pdb
+C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\bin\Debug\Output.exe.config
+C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\bin\Debug\Output.exe
+C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\bin\Debug\Output.pdb
+C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.csproj.AssemblyReference.cache
+C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.csproj.CoreCompileInputs.cache
+C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.exe
+C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.pdb
