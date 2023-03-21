@@ -247,31 +247,7 @@ namespace Hackerman
                                         {
                                             try
                                             {
-                                                Console.WriteLine(_data[0]);
-                                                List<string> writeList = new List<string>();
-                                                switch (_data[0])
-                                                {
-                                                    case 1:
-                                                        GameConsole.Add("Do you wish to create or join a room");
-                                                        GameConsole.Add("LOOSER!!!!");
-                                                        break;
-                                                    case 69:
-                                                        byte[] output = new byte[_data.Length-2];
-                                                        output = _data.Where(x => x != 00).ToArray();
-                                                        for(int i = 1; i < output.Length-1; i++)
-                                                        {
-                                                            output[i] = _data[i];
-                                                            Console.WriteLine(_data[i]);
-                                                        }
-
-                                                        GameConsole.Add(Decoder.Decode(output));
-                                                        break;
-                                                    case 3:
-                                                        GameConsole.Write(writeList);
-                                                        SendDataEvent?.Invoke(_data[1]);
-                                                        break;
-                                                }
-                                               
+                                                processData(_data);
 
                                             }
                                             catch (Exception e)
@@ -305,6 +281,46 @@ namespace Hackerman
                 private NetworkStream _stream;
                 private Thread _thread;
                 private AutoResetEvent ShutdownEvent;
+
+                void processData(byte[] instruction)
+                {
+                    instruction = instruction.Where(x => x != 00).ToArray();
+                    byte[] _data = new byte[instruction[0] + (Convert.ToInt32(instruction[0] == 255) * instruction[1])];
+                    for(int i = 0; i < _data.Length; i++)
+                    {
+                        _data[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i];
+                    }
+                    List<string> writeList = new List<string>();
+                    switch (_data[0])
+                    {
+                        case 1:
+                            GameConsole.Add("Do you wish to create or join a room");
+                            GameConsole.Add("LOOSER!!!!");
+                            break;
+                        case 69:
+                            byte[] output = new byte[_data.Length - 1];
+                            for (int i = 0; i < output.Length; i++)
+                            {
+                                output[i] = _data[i+1];
+                            }
+                            GameConsole.Add(Decoder.Decode(output));
+                            break;
+                        case 3:
+                            GameConsole.Write(writeList);
+                            SendDataEvent?.Invoke(_data[1]);
+                            break;
+                    }
+                    if(_data.Length + 1 + Convert.ToInt32(instruction[0] == 255) != instruction.Length)
+                    {
+                        int length = instruction.Length - (_data.Length + 1 + Convert.ToInt32(instruction[0] == 255));
+                        byte[] newInstruction = new byte[length];
+                        for(int i = 0; i < newInstruction.Length; i++)
+                        {
+                            newInstruction[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i + _data.Length];
+                        }
+                        processData(newInstruction);
+                    }
+                }
             }
 
             private sealed class Sender
@@ -327,6 +343,14 @@ namespace Hackerman
                                 case "join":
                                     SendData(new byte[] { 2, 2 });
                                     break;
+                                default: SendData(new byte[] { 10, 2 }); break;
+
+                            }
+                            break;
+                        default:
+                            switch (input.ToLower())
+                            {
+                                default: SendData(new byte[] { 10, 10 }); break;
                             }
                             break;
                     }

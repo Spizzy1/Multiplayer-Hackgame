@@ -70,7 +70,7 @@ void readServer(TcpClient client)
                             {
                                 if (_data[1] == 1)
                                 {
-
+                                    writeServer(client, 68);
                                 }
                                 else
                                 {
@@ -78,8 +78,15 @@ void readServer(TcpClient client)
                                 }
                             }
                             break;
+                        case 69:
+
+                            break;
                         case 200:
                             Console.WriteLine("Client alive");
+                            break;
+                        default:
+                            writeMsg(client, "Invalid input");
+                            writeServer(client, new byte[] { 3, 2 });
                             break;
                     }
                 }
@@ -98,24 +105,48 @@ void writeServer(TcpClient client, object instruction)
         switch ((byte)instruction)
         {
             case 1:
-                client.GetStream().Write(new byte[] { 1 }, 0, 1);
+                byte[] data = formatMsg(new byte[] {1});
+                client.GetStream().Write(data, 0, data.Length);
                 break;
             case 69:
-                byte[] msg = Server.Decoder.Encode("amongus \n so\n sus\n");
-                byte[] msgindex = new byte[1 + msg.Length];
-                msgindex[0] = 69;
-                msg.CopyTo(msgindex, 1);
-                client.GetStream().Write(msgindex, 0, msgindex.Length);
+                writeMsg(client, "amongus \n so\n sus");
+                break;
+            case 68:
+                
                 break;
         }
     }
     else if (instruction.GetType() == typeof(byte[]))
     {
-        byte[] input = ((byte[])instruction).Where(x => x != 00).ToArray();
+        byte[] input = formatMsg(((byte[])instruction).Where(x => x != 00).ToArray());
         Console.WriteLine(input[0]);
         client.GetStream().Write(input, 0, input.Length);
     }
 
+}
+void writeMsg(TcpClient client, string message)
+{
+    byte[] msg = Server.Decoder.Encode(message);
+    byte[] msgindex = new byte[1 + msg.Length];
+    msgindex[0] = 69;
+    msg.CopyTo(msgindex, 1);
+    msgindex = formatMsg(msgindex);
+    client.GetStream().Write(msgindex, 0, msgindex.Length);
+}
+byte[] formatMsg(byte[] instruction)
+{
+    byte[] msg = new byte[instruction.Length+1 + Convert.ToInt16(instruction.Length >= 255)];
+    msg[0] = (byte)instruction.Length;
+    if(instruction.Length >= 255)
+    {
+        msg[1] = (byte)(instruction.Length - 255);
+        instruction.CopyTo(msg, 2);
+    }
+    else
+    {
+        instruction.CopyTo(msg, 1);
+    }
+    return msg;
 }
 
 async void test()
@@ -123,6 +154,14 @@ async void test()
 
 }
 
+class Client
+{
+    Client(TcpClient client)
+    {
+        _client = client;
+    }
+    private TcpClient _client;
+}
 class Room
 {
     public Room(int maxPlayers, TcpListener server)

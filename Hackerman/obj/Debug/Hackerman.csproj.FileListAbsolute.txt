@@ -13,3 +13,4 @@ C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\obj\Debug\Hackerman.csproj.As
 C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\obj\Debug\Hackerman.csproj.CoreCompileInputs.cache
 C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\obj\Debug\Hackerman.exe
 C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\obj\Debug\Hackerman.pdb
+C:\Users\isaka\source\repos\P2P-Hackgame\Hackerman\obj\Debug\Hackerman.csproj.SuggestedBindingRedirects.cache
