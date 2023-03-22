@@ -13,11 +13,12 @@ namespace Hackerman
 {
     internal class Program
     {
+        public static string Username;
         static void Main(string[] args)
         {
            Console.ForegroundColor = ConsoleColor.Green;
            Console.WriteLine("Select username");
-           string Username = Console.ReadLine();
+            Username = Console.ReadLine();
             while (true)
             {
                 Client client = null;
@@ -368,6 +369,18 @@ namespace Hackerman
 
                 private void Run()
                 {
+                    byte length = (byte)Username.Length;
+                    byte[] usernameraw = Decoder.Encode(Username);
+                    byte[] nameArray = new byte[length];
+                    for(int i = 0; i < length; i++)
+                    {
+                        nameArray[i] = usernameraw[i];
+                    }
+                    byte[] outPut = new byte[2+length];
+                    outPut[0] = 69;
+                    outPut[1] = length;
+                    nameArray.CopyTo(outPut, 2);
+                    _stream.Write(outPut, 0, outPut.Length);
                     while (!ShutdownEvent.WaitOne(0))
                     {
                         if(_sendData != null)

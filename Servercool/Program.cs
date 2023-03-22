@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Server;
 
 Console.WriteLine("Program started");
+SafeList<Room> rooms = new SafeList<Room>();
 Int32 port = 1300;
 IPAddress localAddr = IPAddress.Any;
 
@@ -26,11 +27,9 @@ void awaitConnection()
         try
         {
             TcpClient client = server.AcceptTcpClient();
-            Thread readClient = new Thread(() => readServer(client));
+            Client player = new Client(client);
+            Thread readClient = new Thread(() => readServer(player));
             readClient.Start();
-            writeServer(client, (byte)1);
-            writeServer(client, (byte)69);
-            writeServer(client, new byte[] { 3, 1 });
             Console.WriteLine("Client connected!");
         }
         catch (Exception ex)
@@ -40,15 +39,15 @@ void awaitConnection()
     }
     server.Stop();
 }
-void readServer(TcpClient client)
+void readServer(Client client)
 {
-    NetworkStream _stream = client.GetStream();
+    NetworkStream _stream = client.connection.GetStream();
     while (true)
     {
         try
         {
             byte[] _data = new byte[255];
-            if (!client.GetStream().DataAvailable)
+            if (!client.connection.GetStream().DataAvailable)
             {
                 Thread.Sleep(1);
             }
@@ -70,7 +69,7 @@ void readServer(TcpClient client)
                             {
                                 if (_data[1] == 1)
                                 {
-                                    writeServer(client, 68);
+
                                 }
                                 else
                                 {
@@ -79,13 +78,17 @@ void readServer(TcpClient client)
                             }
                             break;
                         case 69:
-
+                            client.Name = DecodeRAW(_data);
+                            writeMsg(client.connection, "Welcome! " + client.Name);
+                            writeServer(client, (byte)1);
+                            writeServer(client, (byte)69);
+                            writeServer(client, new byte[] { 3, 1 });
                             break;
                         case 200:
                             Console.WriteLine("Client alive");
                             break;
                         default:
-                            writeMsg(client, "Invalid input");
+                            writeMsg(client.connection, "Invalid input");
                             writeServer(client, new byte[] { 3, 2 });
                             break;
                     }
@@ -98,7 +101,16 @@ void readServer(TcpClient client)
         }
     }
 }
-void writeServer(TcpClient client, object instruction)
+string DecodeRAW(byte[] input)
+{
+    byte[] processData = new byte[input[1]];
+    for (int i = 0; i < input[1]; i++)
+    {
+        processData[i] = input[i + 2];
+    }
+    return Server.Decoder.Decode(processData);
+}
+void writeServer(Client client, object instruction)
 {
     if (instruction.GetType() == typeof(byte))
     {
@@ -106,10 +118,10 @@ void writeServer(TcpClient client, object instruction)
         {
             case 1:
                 byte[] data = formatMsg(new byte[] {1});
-                client.GetStream().Write(data, 0, data.Length);
+                client.connection.GetStream().Write(data, 0, data.Length);
                 break;
             case 69:
-                writeMsg(client, "amongus \n so\n sus");
+                writeMsg(client.connection, "amongus \n so\n sus");
                 break;
             case 68:
                 
@@ -120,7 +132,7 @@ void writeServer(TcpClient client, object instruction)
     {
         byte[] input = formatMsg(((byte[])instruction).Where(x => x != 00).ToArray());
         Console.WriteLine(input[0]);
-        client.GetStream().Write(input, 0, input.Length);
+        client.connection.GetStream().Write(input, 0, input.Length);
     }
 
 }
@@ -156,11 +168,14 @@ async void test()
 
 class Client
 {
-    Client(TcpClient client)
+    public Client(TcpClient client)
     {
         _client = client;
     }
     private TcpClient _client;
+    public TcpClient connection { get { return _client; } }
+    private string _name;
+    public string Name { get { return _name; } set { _name = value; } }
 }
 class Room
 {
@@ -171,7 +186,7 @@ class Room
         _clients = new SafeList<ConnectedClient>();
         _server = server;
     }
-    void initiate(TcpClient host)
+    void initiate(Client host)
     {
         _state = RoomState.settup;
         addPlayer(host);
@@ -195,20 +210,22 @@ class Room
         }
         return;
     }
-    void addPlayer(TcpClient client)
+    void addPlayer(Client client)
     {
         if (_state != RoomState.playing && _clients.Count > _maxPlayers)
         {
-            _clients.Add(new ConnectedClient(client));
+            ConnectedClient addClient = new ConnectedClient(client.connection);
+            addClient.Name = client.Name;
+            _clients.Add(addClient);
         }
     }
     void playerDisconnect()
     {
 
     }
-    internal class ConnectedClient
+    internal class ConnectedClient : Client
     {
-        public ConnectedClient(TcpClient client)
+        public ConnectedClient(TcpClient client) : base(client)
         {
             _client = client;
             health = 100;
@@ -296,7 +313,7 @@ class Room
     }
     int _maxPlayers;
     SafeList<ConnectedClient> _clients;
-    TcpClient _host;
+    Client _host;
     TcpListener _server;
     RoomState _state;
 }
