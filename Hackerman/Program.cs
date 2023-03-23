@@ -362,7 +362,10 @@ namespace Hackerman
                             }
                             else if (input.ToLower().Contains("join"))
                             {
-
+                                string indexString = input.ToLower().Split(' ')[1];
+                                byte indexByte = 0;
+                                byte.TryParse(indexString, out indexByte);
+                                SendData(new byte[] {2, 2, indexByte});
                             }
                             else
                             {
