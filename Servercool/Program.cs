@@ -91,9 +91,9 @@ void readServer(Client client)
                             }
                             break;
                         case 3: 
-                            for(int i = 0; i < rooms.getCopyOfInternalList().Count)
+                            for(int i = 0; i < rooms.getCopyOfInternalList().Count; i++)
                             {
-                                client.writeMsg(i + ": " + rooms.GetAt(i).)
+                                client.writeMsg(i + ": " + rooms.GetAt(i).Host.Name + "'s room");
                             }
                             break;
                         case 69:
@@ -141,6 +141,17 @@ void writeServer(Client client, object instruction)
                 break;
             case 69:
                 client.writeMsg("Type 'create' followed by the amount of max players to create a room and 'join' to join a room");
+                if(rooms.Count == 0)
+                {
+                    client.writeMsg("No rooms available, currently... you can either create a room or wait until a room shows up");
+                }
+                else
+                {
+                    for (int i = 0; i < rooms.getCopyOfInternalList().Count; i++)
+                    {
+                        client.writeMsg(i + ": " + rooms.GetAt(i).Host.Name + "'s room");
+                    }
+                }
                 break;
             case 68:
                 
@@ -374,7 +385,7 @@ class Room
     int _maxPlayers;
     SafeList<ConnectedClient> _clients;
     Client _host;
-    Client Host { get { return _host; } }
+    public Client Host { get { return _host; } }
     TcpListener _server;
     RoomState _state;
 }
