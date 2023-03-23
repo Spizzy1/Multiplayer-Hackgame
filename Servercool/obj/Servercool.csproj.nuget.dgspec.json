@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\isaka\\source\\repos\\P2P-Hackgame\\Servercool\\Servercool.csproj": {}
+    "C:\\Users\\Isak.Nilsson7\\source\\repos\\Hackerman\\Servercool\\Servercool.csproj": {}
   },
   "projects": {
-    "C:\\Users\\isaka\\source\\repos\\P2P-Hackgame\\Servercool\\Servercool.csproj": {
+    "C:\\Users\\Isak.Nilsson7\\source\\repos\\Hackerman\\Servercool\\Servercool.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\isaka\\source\\repos\\P2P-Hackgame\\Servercool\\Servercool.csproj",
+        "projectUniqueName": "C:\\Users\\Isak.Nilsson7\\source\\repos\\Hackerman\\Servercool\\Servercool.csproj",
         "projectName": "Servercool",
-        "projectPath": "C:\\Users\\isaka\\source\\repos\\P2P-Hackgame\\Servercool\\Servercool.csproj",
-        "packagesPath": "C:\\Users\\isaka\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\isaka\\source\\repos\\P2P-Hackgame\\Servercool\\obj\\",
+        "projectPath": "C:\\Users\\Isak.Nilsson7\\source\\repos\\Hackerman\\Servercool\\Servercool.csproj",
+        "packagesPath": "C:\\Users\\Isak.Nilsson7\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Isak.Nilsson7\\source\\repos\\Hackerman\\Servercool\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\isaka\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Isak.Nilsson7\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -58,7 +58,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.201\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.202\\RuntimeIdentifierGraph.json"
         }
       }
     }

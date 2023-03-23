@@ -39,6 +39,8 @@ void awaitConnection()
     }
     server.Stop();
 }
+
+
 void readServer(Client client)
 {
     NetworkStream _stream = client.connection.GetStream();
@@ -69,17 +71,34 @@ void readServer(Client client)
                             {
                                 if (_data[1] == 1)
                                 {
-
+                                    Room newRoom = new Room(_data[2], server);
+                                    rooms.Add(newRoom);
+                                    newRoom.initiate(client);
+                                    break;
                                 }
                                 else
                                 {
-
+                                    List<Room> saveList = rooms.getCopyOfInternalList();
+                                    if(rooms.Count == 0)
+                                    {
+                                        client.writeMsg("No rooms available, currently... you can either restart and create a room or wait until a room shows up");
+                                        while (client.connection.Connected && rooms.Count == 0)
+                                        {
+                                            Thread.Sleep(100);
+                                        }
+                                    }
                                 }
+                            }
+                            break;
+                        case 3: 
+                            for(int i = 0; i < rooms.getCopyOfInternalList().Count)
+                            {
+                                client.writeMsg(i + ": " + rooms.GetAt(i).)
                             }
                             break;
                         case 69:
                             client.Name = DecodeRAW(_data);
-                            writeMsg(client.connection, "Welcome! " + client.Name);
+                            client.writeMsg("Welcome! " + client.Name);
                             writeServer(client, (byte)1);
                             writeServer(client, (byte)69);
                             writeServer(client, new byte[] { 3, 1 });
@@ -88,8 +107,8 @@ void readServer(Client client)
                             Console.WriteLine("Client alive");
                             break;
                         default:
-                            writeMsg(client.connection, "Invalid input");
-                            writeServer(client, new byte[] { 3, 2 });
+                            client.writeMsg("Invalid input");
+                            writeServer(client, new byte[] { 3, 1 });
                             break;
                     }
                 }
@@ -117,11 +136,11 @@ void writeServer(Client client, object instruction)
         switch ((byte)instruction)
         {
             case 1:
-                byte[] data = formatMsg(new byte[] {1});
+                byte[] data = client.formatMsg(new byte[] {1});
                 client.connection.GetStream().Write(data, 0, data.Length);
                 break;
             case 69:
-                writeMsg(client.connection, "amongus \n so\n sus");
+                client.writeMsg("Type 'create' followed by the amount of max players to create a room and 'join' to join a room");
                 break;
             case 68:
                 
@@ -130,35 +149,11 @@ void writeServer(Client client, object instruction)
     }
     else if (instruction.GetType() == typeof(byte[]))
     {
-        byte[] input = formatMsg(((byte[])instruction).Where(x => x != 00).ToArray());
+        byte[] input = client.formatMsg(((byte[])instruction).Where(x => x != 00).ToArray());
         Console.WriteLine(input[0]);
         client.connection.GetStream().Write(input, 0, input.Length);
     }
 
-}
-void writeMsg(TcpClient client, string message)
-{
-    byte[] msg = Server.Decoder.Encode(message);
-    byte[] msgindex = new byte[1 + msg.Length];
-    msgindex[0] = 69;
-    msg.CopyTo(msgindex, 1);
-    msgindex = formatMsg(msgindex);
-    client.GetStream().Write(msgindex, 0, msgindex.Length);
-}
-byte[] formatMsg(byte[] instruction)
-{
-    byte[] msg = new byte[instruction.Length+1 + Convert.ToInt16(instruction.Length >= 255)];
-    msg[0] = (byte)instruction.Length;
-    if(instruction.Length >= 255)
-    {
-        msg[1] = (byte)(instruction.Length - 255);
-        instruction.CopyTo(msg, 2);
-    }
-    else
-    {
-        instruction.CopyTo(msg, 1);
-    }
-    return msg;
 }
 
 async void test()
@@ -172,6 +167,49 @@ class Client
     {
         _client = client;
     }
+    /// <summary>
+    /// Formats the string to be sent and decoded by the client
+    /// </summary>
+    /// <param name="message"></param>
+    public void writeMsg(string message)
+    {
+        byte[] msg = Server.Decoder.Encode(message);
+        byte[] msgindex = new byte[1 + msg.Length];
+        msgindex[0] = 69;
+        msg.CopyTo(msgindex, 1);
+        msgindex = formatMsg(msgindex);
+        _client.GetStream().Write(msgindex, 0, msgindex.Length);
+    }
+    /// <summary>
+    /// Formats your data to be read by the client correctly, data without correct formatting will return an error on the client
+    /// </summary>
+    /// <param name="instruction"></param>
+    /// <returns></returns>
+    public byte[] formatMsg(byte[] instruction)
+    {
+        byte[] msg = new byte[instruction.Length + 1 + Convert.ToInt16(instruction.Length >= 255)];
+        msg[0] = (byte)instruction.Length;
+        if (instruction.Length >= 255)
+        {
+            msg[1] = (byte)(instruction.Length - 255);
+            instruction.CopyTo(msg, 2);
+        }
+        else
+        {
+            instruction.CopyTo(msg, 1);
+        }
+        return msg;
+    }
+    /// <summary>
+    /// Use this instead of the normal TcpClient.Write function as this formats your message for you
+    /// </summary>
+    /// <param name="msg"></param>
+    public void Write(byte[] msg)
+    {
+        msg = formatMsg(msg);
+        connection.GetStream().Write(msg, 0, msg.Length);
+    }
+
     private TcpClient _client;
     public TcpClient connection { get { return _client; } }
     private string _name;
@@ -185,12 +223,16 @@ class Room
         _state = RoomState.instantiated;
         _clients = new SafeList<ConnectedClient>();
         _server = server;
+        _shuttingDown = false;
     }
-    void initiate(Client host)
+    public void initiate(Client host)
     {
         _state = RoomState.settup;
         addPlayer(host);
         _host = host;
+        host.writeMsg("Room created with " + _maxPlayers + " maximum players...");
+        host.Write(new byte[] { 3 });
+        Task.Run(checkConnection);
         waitForPlayers();
 
     }
@@ -201,7 +243,7 @@ class Room
         int saveCount = _clients.Count;
 
         Console.WriteLine("Waiting for player " + _clients.Count + 1);
-        while (DateTime.Now.Millisecond - time < 20000 && _clients.Count != _maxPlayers)
+        while (DateTime.Now.Millisecond - time < 20000 && _clients.Count != _maxPlayers && !_shuttingDown)
         {
             if (_clients.Count > saveCount)
             {
@@ -286,17 +328,34 @@ class Room
     }
     void checkConnection()
     {
-        while (true)
+        List<ConnectedClient> saveList = _clients.getCopyOfInternalList();
+        while (!_shuttingDown)
         {
+            if(saveList.Count > _clients.getCopyOfInternalList().Count)
+            {
+                Console.WriteLine("client disconnected");
+            }
+            saveList = _clients.getCopyOfInternalList();
+            Console.WriteLine("Checking connections...");
+            if (_clients.Count == 0)
+            {
+                Console.WriteLine("Room shutting down");
+                _shuttingDown = true;
+            }
             foreach (var client in _clients.getCopyOfInternalList())
             {
                 try
                 {
-                    client.Client.GetStream().Write(new byte[] { 200 }, 0, 1);
+                    client.Write(new byte[] { 200 });
                 }
                 catch (Exception ex)
                 {
-
+                    Console.WriteLine("client disconnected");
+                    if(_clients.Count == 0)
+                    {
+                        Console.WriteLine("Room shutting down");
+                        _shuttingDown = true;
+                    }
                 }
             }
             Thread.Sleep(5000);
@@ -311,9 +370,11 @@ class Room
         starting,
         playing
     }
+    bool _shuttingDown;
     int _maxPlayers;
     SafeList<ConnectedClient> _clients;
     Client _host;
+    Client Host { get { return _host; } }
     TcpListener _server;
     RoomState _state;
 }

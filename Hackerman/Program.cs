@@ -308,7 +308,9 @@ namespace Hackerman
                             break;
                         case 3:
                             GameConsole.Write(writeList);
-                            SendDataEvent?.Invoke(_data[1]);
+                            if(_data.Length >= 2) {
+                                SendDataEvent?.Invoke(_data[1]);
+                            }
                             break;
                     }
                     if(_data.Length + 1 + Convert.ToInt32(instruction[0] == 255) != instruction.Length)
@@ -326,6 +328,7 @@ namespace Hackerman
 
             private sealed class Sender
             {
+
                 internal void SendData(byte[] data)
                 {
                     _sendData = data;
@@ -336,7 +339,7 @@ namespace Hackerman
                     switch (index)
                     {
                         case 1:
-                            switch (input.ToLower())
+                            /*switch (input.ToLower())
                             {
                                 case "create":
                                     SendData(new byte[] { 2, 1 });
@@ -346,6 +349,24 @@ namespace Hackerman
                                     break;
                                 default: SendData(new byte[] { 10, 2 }); break;
 
+                            }*/
+                            if (input.ToLower().Contains("create"))
+                            {
+
+                                string players = input.ToLower().Split(' ')[1];
+                                byte maxPlayers = 4;
+                                byte.TryParse(players, out maxPlayers);
+                                maxPlayers = Convert.ToByte((maxPlayers * Convert.ToByte(maxPlayers != 0)) + (((byte)4) * Convert.ToByte(maxPlayers == 0)));
+                                maxPlayers = Math.Min((byte)8, maxPlayers);
+                                SendData(new byte[] { 2, 1, maxPlayers});
+                            }
+                            else if (input.ToLower().Contains("join"))
+                            {
+
+                            }
+                            else
+                            {
+                                SendData(new byte[] { 10, 10 });
                             }
                             break;
                         default:
