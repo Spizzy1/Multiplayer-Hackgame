@@ -111,7 +111,7 @@ void readServer(Client client)
                             client.writeMsg("Welcome! " + client.Name);
                             writeServer(client, (byte)1);
                             writeServer(client, (byte)69);
-                            writeServer(client, new byte[] { 3, 1 });
+                            client.Write(new byte[] { 3, 1 });
                             break;
                         case 200:
                             Console.WriteLine("Client alive");
@@ -159,9 +159,17 @@ void writeServer(Client client, object instruction)
                 {
                     for (int i = 0; i < rooms.getCopyOfInternalList().Count; i++)
                     {
-                        client.writeMsg(i + ": " + rooms.GetAt(i).Host.Name + "'s room");
+                        try
+                        {
+                            client.writeMsg(i + ": " + rooms.GetAt(i).Host.Name + "'s room");
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.ToString());
+                        }
                     }
                 }
+
                 break;
             case 68:
                 

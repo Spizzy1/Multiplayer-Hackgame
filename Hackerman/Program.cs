@@ -244,10 +244,15 @@ namespace Hackerman
                                         {
                                             _stream.Write(new byte[] {200}, 0, 1);
                                         }
+                                        if(_data[0] == 111)
+                                        {
+                                            Console.WriteLine("test recieved");
+                                        }
                                         else
                                         {
                                             try
                                             {
+                                                Console.WriteLine("Data!!!");
                                                 processData(_data);
 
                                             }
@@ -291,6 +296,12 @@ namespace Hackerman
                     {
                         _data[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i];
                     }
+                    for (int i = 0; i < instruction.Length; i++)
+                    {
+                        Console.Write(instruction[i] + " ");
+                    }
+                    Console.WriteLine(" ");
+                    Console.WriteLine(" ");
                     List<string> writeList = new List<string>();
                     switch (_data[0])
                     {
