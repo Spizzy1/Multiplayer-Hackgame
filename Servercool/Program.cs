@@ -96,12 +96,23 @@ void readServer(Client client)
                                 }
                                 else if(_data[1] == 2)
                                 {
-                                    if(rooms.Count > _data[2])
+                                    try
                                     {
-                                        rooms.GetAt(_data[2]).addPlayer(client);
-                                        client.writeMsg("You have joined " + rooms.GetAt(_data[2]).Host.Name + "'s room!");
-                                        client.writeMsg("If you joined the wrong room it is probably due to an indexing issue, please restart your client");
-                                        client.Write(new byte[] { 3 });
+                                        if (client.SaveList != null && client.SaveList[_data[2]] != null && client.SaveList[_data[2]].addPlayer(client) && rooms.Count > _data[2])
+                                        {
+                                            client.writeMsg("You have joined " + client.SaveList[_data[2]].Host.Name + "'s room!");
+                                            client.Write(new byte[] { 3 });
+                                        }
+                                        else
+                                        {
+                                            client.writeMsg("There was an issue trying to join the room, refreshing \n");
+                                            writeServer(client, (byte)69);
+                                            client.Write(new byte[] { 3, 1 });
+                                        }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine(e.ToString());
                                     }
                                 }
                             }
@@ -157,11 +168,17 @@ void writeServer(Client client, object instruction)
                 }
                 else
                 {
-                    for (int i = 0; i < rooms.getCopyOfInternalList().Count; i++)
+                    client.writeMsg("Rooms:\n");
+                    client.SaveList = rooms.getCopyOfInternalList();
+                    int i = 0;
+                    foreach(Room room in client.SaveList)
                     {
                         try
                         {
-                            client.writeMsg(i + ": " + rooms.GetAt(i).Host.Name + "'s room");
+                            Console.WriteLine(room.Host.Name);
+                            client.writeMsg(i + ": " + room.Host.Name + $"'s room \nJoinable: {room.Joinable} \nPlayers: {room.currentPlayers}/{room.MaxPlayers}\n");
+                            i++;
+
                         }
                         catch (Exception e)
                         {
@@ -256,10 +273,11 @@ public class Client
     private TcpClient _client;
     public TcpClient connection { get { return _client; } }
     private string _name;
+    public List<Room> SaveList { get; set; }
     public string Name { get { return _name; } set { _name = value; } }
 }
 public class Room
-{ 
+{
     public Room(int maxPlayers, TcpListener server)
     {
         _maxPlayers = maxPlayers;
@@ -273,9 +291,16 @@ public class Room
         _state = RoomState.settup;
         addPlayer(host);
         host.writeMsg("Room created with " + _maxPlayers + " maximum players...");
+        _host = _clients.GetAt(0);
         host.Write(new byte[] { 3 });
         Task.Run(checkConnection);
         waitForPlayers();
+        foreach (ConnectedClient client in _clients.getCopyOfInternalList())
+        {
+            client?.writeMsg("starting game...");
+            client?.Write(new byte[] { 3 });
+        }
+        _state = RoomState.starting;
 
     }
     void waitForPlayers()
@@ -287,20 +312,69 @@ public class Room
         Console.WriteLine("Waiting for player " + (_clients.Count + 1));
         while (DateTime.Now.Millisecond - time < 20000 && _clients.Count != _maxPlayers && !_shuttingDown)
         {
-            if (_clients.Count > saveCount)
+            if (_clients.Count > saveCount || _clients.Count == 1)
             {
                 time = DateTime.Now.Millisecond;
             }
         }
+        int Currentplayers = _clients.Count;
+        if (!ShuttingDown)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+
+                foreach (ConnectedClient client in _clients.getCopyOfInternalList())
+                {
+                    try
+                    {
+                        client?.writeMsg($"Starting in... {5 - i}");
+                        client?.Write(new byte[] { 3 });
+                        Thread.Sleep(1000);
+                    }
+                    catch (Exception ex)
+                    {
+                        playerDisconnect(client);
+                    }
+
+                }
+                if (Currentplayers != _clients.Count)
+                {
+                    foreach (ConnectedClient client in _clients.getCopyOfInternalList())
+                    {
+                        client?.writeMsg("Start abrupted, redoing");
+                        client?.Write(new byte[] { 3 });
+                        waitForPlayers();
+                        return;
+                    }
+                }
+            }
+        }
         return;
     }
-    public void addPlayer(Client client)
+    void removeRoom()
     {
-        if (_state != RoomState.playing && _clients.Count < _maxPlayers)
+        Console.WriteLine("Room shutting down");
+        _shuttingDown = true;
+        RoomHandler.OnRoom?.Invoke(this, new RoomHandler.RoomDestroyArgs(this));
+
+    }
+    public bool addPlayer(Client client)
+    {
+        if ((_state == RoomState.waiting || _state == RoomState.settup) && _clients.Count < _maxPlayers)
         {
+            foreach (ConnectedClient c in _clients.getCopyOfInternalList())
+            {
+                c?.writeMsg($"{client.Name} has joined the room!");
+            }
             ConnectedClient addClient = new ConnectedClient(client.connection);
             addClient.Name = client.Name;
             _clients.Add(addClient);
+            return true;
+        }
+        else
+        {
+            client.writeMsg("The room is currently unavailable.");
+            return false;
         }
     }
     void playerDisconnect(ConnectedClient client)
@@ -386,7 +460,7 @@ public class Room
         while (!_shuttingDown)
         {
             Console.WriteLine(_clients.Count);
-            if(saveList.Count > _clients.getCopyOfInternalList().Count)
+            if (saveList.Count > _clients.getCopyOfInternalList().Count)
             {
                 Console.WriteLine("client disconnected");
             }
@@ -409,7 +483,7 @@ public class Room
                 {
                     playerDisconnect(client);
                     Console.WriteLine("client disconnected");
-                    if(_clients.Count == 0)
+                    if (_clients.Count == 0)
                     {
                         Console.WriteLine("Room shutting down");
                         _shuttingDown = true;
@@ -432,14 +506,22 @@ public class Room
     bool _shuttingDown;
     public bool ShuttingDown { get { return _shuttingDown; } }
     int _maxPlayers;
+    public int MaxPlayers { get { return _maxPlayers; } }
     SafeList<ConnectedClient> _clients;
+    public int currentPlayers { get { return _clients.Count; } }
     Client _host;
     public Client Host { get { return _host; } }
     TcpListener _server;
     RoomState _state;
+
+    public bool Joinable
+    {
+        get { return (_state == RoomState.waiting || _state == RoomState.settup) && _clients.Count < _maxPlayers; }
+
+    }
 }
-//Stole from pontus credit to him
-public class SafeList<T>
+    //Stole from pontus credit to him
+    public class SafeList<T>
 {
     private List<T> _internalList;
     private bool isBusy = false;
