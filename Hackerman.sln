@@ -13,7 +13,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Output", "Output\Output.csproj", "{AA86E7FF-D522-489F-8431-B02957617E32}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Servercool", "Servercool\Servercool.csproj", "{3A37F15C-40F4-4667-B1B5-AA00EEF13247}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Servercool", "Servercool\Servercool.csproj", "{3A37F15C-40F4-4667-B1B5-AA00EEF13247}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3878DBCF-DD88-4F9F-94D4-A2DE60CEC42D}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -32,12 +32,11 @@ namespace Hackerman
                     Console.Clear();
                     Console.WriteLine("Welcome: " + Username + " to test P2P hacking game");
                     Console.WriteLine("Do you want to check information, create a session or join a session?");
-                    Console.WriteLine("create a session: C or Create");
-                    Console.WriteLine("join a session: J or Join");
+                    Console.WriteLine("join central server: j or join");
                     Console.WriteLine("information: inf, info or information");
                     string command = Console.ReadLine().ToLower();
 
-                    if (command != "c" && command != "create" && command != "j" && command != "join" && command != "inf" && command != "info" && command != "information")
+                    if (command != "j" && command != "join" && command != "inf" && command != "info" && command != "information")
                     {
                         Console.Clear();
                         Console.WriteLine("Invalid command input, returning to main menu.");
@@ -56,13 +55,9 @@ namespace Hackerman
                     Console.WriteLine("Command chosen: " + pickedCommand);
                     switch (pickedCommand)
                     {
-                        case "c":
-                        case "create":
-                            CreateSession();
-                            break;
                         case "j":
                         case "join":
-                            JoinSession();
+                            CreateSession();
                             break;
                         case "inf":
                         case "info":

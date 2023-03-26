@@ -92,7 +92,7 @@ void readServer(Client client)
                                     Room newRoom = new Room(_data[2], server);
                                     rooms.Add(newRoom);
                                     newRoom.initiate(client);
-                                    break;
+                                    return;
                                 }
                                 else if(_data[1] == 2)
                                 {
@@ -102,6 +102,7 @@ void readServer(Client client)
                                         {
                                             client.writeMsg("You have joined " + client.SaveList[_data[2]].Host.Name + "'s room!");
                                             client.Write(new byte[] { 3 });
+                                            return;
                                         }
                                         else
                                         {
@@ -301,7 +302,21 @@ public class Room
             client?.Write(new byte[] { 3 });
         }
         _state = RoomState.starting;
+        foreach(ConnectedClient client in _clients.getCopyOfInternalList())
+        {
+            if(client != null)
+            {
+                Task.Run(client.readRoom);
+            }
+        }
 
+    }
+    void ManageGame()
+    {
+        while (!_shuttingDown)
+        {
+
+        }
     }
     void waitForPlayers()
     {
@@ -393,24 +408,85 @@ public class Room
             }
         }
     }
+    internal class Computer
+    {
+        public Computer()
+        {
+            _health = 100;
+            _resources = 100;
+        }
+        private int _health;
+        private int _resources;
+    }
+    static class ConnectionHandler
+    {
+        public static SafeList<Connection> ConnectedComputers = new SafeList<Connection>();
+
+        static void Connect(Computer computer1, Computer computer2)
+        {
+            if(ConnectedComputers.getCopyOfInternalList().Where(x => x.Computers.Contains(computer1) && x.Computers.Contains(computer2)) == null)
+            {
+                ConnectedComputers.Add(new Connection(computer1, computer2));
+            }
+        }
+        static void Disconnect(Computer computer1, Computer computer2)
+        {
+            List<Connection>? computers = ConnectedComputers.getCopyOfInternalList().Where(x => x.Computers.Contains(computer1) && x.Computers.Contains(computer2)).ToList();
+            if (computers != null)
+            {
+                foreach(Connection computer in computers)
+                {
+                    ConnectedComputers.Remove(computer);
+                }
+            }
+        }
+        public static List<Computer> GetComputers(Computer computer)
+        {
+            List<Computer> computers = new List<Computer>();
+            foreach(Connection connection in ConnectedComputers.getCopyOfInternalList().Where(x => x.Computers.Contains(computer)).ToList())
+            {
+                Computer? addComputer = connection.Computers.Where(x => x != computer).Take(1).FirstOrDefault();
+                if(addComputer != null)
+                {
+                    computers.Add(addComputer);
+                }
+            }
+            return computers;
+        }
+        public static List<Connection> GetConnections(Computer computer) {
+            return ConnectedComputers.getCopyOfInternalList().Where(x => x.Computers.Contains(computer)).ToList();
+        }
+    }
+    internal class Connection
+    {
+        public Connection(Computer computer1, Computer computer2)
+        {
+            computers = new Computer[2];
+            computers[0] = computer1;
+            computers[1] = computer2;
+            _strength = 1;
+        }
+        private Computer[] computers;
+        public Computer[] Computers { get { return computers; } }
+
+        private int _strength;
+    }
     internal class ConnectedClient : Client
     {
         public ConnectedClient(TcpClient client) : base(client)
         {
             _client = client;
-            health = 100;
         }
-        void writeClient(byte instruction)
+        public void writeClient(byte instruction)
         {
             Console.WriteLine("Input recieved: " + instruction);
             switch (instruction)
             {
                 case 1:
-                    Client.GetStream().Write(new byte[] { 1, (byte)Health }, 0, 2);
                     break;
             }
         }
-        void readRoom()
+        public void readRoom()
         {
             NetworkStream _stream = Client.GetStream();
             while (true)
@@ -450,10 +526,38 @@ public class Room
         }
         private TcpClient _client;
         public TcpClient Client { get { return _client; } }
-        private int health;
-        public int Health { get { return health; } set { health = value; } }
 
     }
+    internal class Process
+    {
+        public Process(Connection connection, Computer subject, Computer target, int cost)
+        {
+            _connection = connection;
+            _subject = subject;
+            _target = target;
+            _cost = cost;
+        }
+        private Connection _connection;
+        public Connection Connection { get { return _connection; } }
+        private Computer _subject;
+        public Computer Subject { get { return _subject; } }
+        private Computer _target;
+        public Computer Target { get { return _target; } }
+        private int _cost;
+        public int Cost { get { return _cost; } }
+
+        public virtual void effect()
+        {
+
+        }
+    }
+    /*internal class Attack : Process
+    {
+        public Attack()
+        {
+
+        }
+    }*/
     void checkConnection()
     {
         List<ConnectedClient> saveList = _clients.getCopyOfInternalList();
