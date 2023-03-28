@@ -22,7 +22,6 @@ namespace Hackerman
             while (true)
             {
                 Client client = null;
-                TcpClient outPutClient = null;
                 Console.Clear();
                 MainMenu();
 
@@ -116,10 +115,12 @@ namespace Hackerman
             {
                 Console.Clear();
                 gameLog.AddRange(info);
+                string printString = "";
                 foreach (string item in gameLog)
                 {
-                    Console.WriteLine(item);
+                    printString += item + "\n";
                 }
+                Console.WriteLine(printString);
                 gameLog.Add(" ");
                 gameLog.Add("------------------------------");
                 gameLog.Add(" ");
@@ -378,6 +379,23 @@ namespace Hackerman
                             switch (input.ToLower())
                             {
                                 default: SendData(new byte[] { 10, 10 }); break;
+                            }
+                            break;
+
+                        case 2:
+                            string[] command = input.ToLower().Split(' ');
+                            switch (command[0])
+                            {
+                                case "attack":
+                                    break;
+                                case "strengthen":
+                                    break;
+                                case "scan":
+                                    SendData(new byte[] { 5 });
+                                    break;
+                                default:
+                                    SendData(new byte[] { 10, 10 });
+                                    break;
                             }
                             break;
                     }
