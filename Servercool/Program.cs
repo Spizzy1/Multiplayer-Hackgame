@@ -462,6 +462,7 @@ public class Room
         private int _health;
         public int Health { get { return _health; } }
         private int _resources;
+        public int Resources { get { return _resources; } set { Math.Clamp(value, 0, 100); } }
 
         string _name;
         public string Name { get { return _name; } }
@@ -616,7 +617,7 @@ public class Room
         public int Cost { get { return _cost; } }
         public virtual void kill()
         {
-
+            _subject.Resources -= Cost;
         }
         public virtual void effect()
         {
@@ -645,7 +646,7 @@ public class Room
         public override void effect()
         {
             base.effect();
-            Connection.strength += Cost * ((-1) * Convert.ToByte(_positive));
+            Connection.strength += Cost * (Convert.ToByte(!_positive) + ((-1) * Convert.ToByte(_positive)));
         }
         bool _positive;
     }
