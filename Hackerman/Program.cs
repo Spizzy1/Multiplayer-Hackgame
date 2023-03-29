@@ -384,11 +384,28 @@ namespace Hackerman
 
                         case 2:
                             string[] command = input.ToLower().Split(' ');
+                            byte magnitude = 1;
+                            byte[] formattedByte = new byte[command.Length < 2 ? default(int) + 3 : Decoder.Encode(command[1]).Length+3];
                             switch (command[0])
                             {
+
                                 case "attack":
+                                    Byte.TryParse(command[2], out magnitude);
+                                    formattedByte[0] = 6;
+                                    formattedByte[1] = magnitude;
+                                    formattedByte[2] = (byte)command[1].Length;
+                                    byte[] chars = Decoder.Encode(command[1]);
+                                    Console.WriteLine(formattedByte.Length);
+                                    Console.WriteLine(chars.Length);
+                                    for(int i = 0; i < chars.Length; i++)
+                                    {
+                                        formattedByte[i+2] = chars[i];
+                                    }
+                                    SendData(formattedByte) ;
                                     break;
                                 case "strengthen":
+                                    Byte.TryParse(command[2], out magnitude);
+                                    SendData(new byte[] { 7, magnitude });
                                     break;
                                 case "scan":
                                     SendData(new byte[] { 5 });

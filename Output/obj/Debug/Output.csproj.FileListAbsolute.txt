@@ -16,3 +16,4 @@ C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.csproj.Assembly
 C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.csproj.CoreCompileInputs.cache
 C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.exe
 C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.pdb
+C:\Users\isaka\source\repos\P2P-Hackgame\Output\obj\Debug\Output.csproj.SuggestedBindingRedirects.cache
