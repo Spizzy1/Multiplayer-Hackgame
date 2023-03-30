@@ -353,26 +353,33 @@ namespace Hackerman
                                 default: SendData(new byte[] { 10, 2 }); break;
 
                             }*/
-                            if (input.ToLower().Contains("create"))
+                            try
                             {
-
-                                string players = input.ToLower().Split(' ')[1];
-                                byte maxPlayers = 4;
-                                byte.TryParse(players, out maxPlayers);
-                                maxPlayers = Convert.ToByte((maxPlayers * Convert.ToByte(maxPlayers != 0)) + (((byte)4) * Convert.ToByte(maxPlayers == 0)));
-                                maxPlayers = Math.Min((byte)8, maxPlayers);
-                                SendData(new byte[] { 2, 1, maxPlayers});
+                                if (input.ToLower().Contains("create"))
+                                {
+                                    string players = input.ToLower().Split(' ')[1];
+                                    byte maxPlayers = 4;
+                                    byte.TryParse(players, out maxPlayers);
+                                    maxPlayers = Convert.ToByte((maxPlayers * Convert.ToByte(maxPlayers != 0)) + (((byte)4) * Convert.ToByte(maxPlayers == 0)));
+                                    maxPlayers = Math.Min((byte)8, maxPlayers);
+                                    SendData(new byte[] { 2, 1, maxPlayers });
+                                }
+                                else if (input.ToLower().Contains("join"))
+                                {
+                                    string indexString = input.ToLower().Split(' ')[1];
+                                    byte indexByte = 0;
+                                    byte.TryParse(indexString, out indexByte);
+                                    SendData(new byte[] { 2, 2, indexByte });
+                                }
+                                else
+                                {
+                                    SendData(new byte[] { 10, 10 });
+                                }
                             }
-                            else if (input.ToLower().Contains("join"))
-                            {
-                                string indexString = input.ToLower().Split(' ')[1];
-                                byte indexByte = 0;
-                                byte.TryParse(indexString, out indexByte);
-                                SendData(new byte[] {2, 2, indexByte});
-                            }
-                            else
-                            {
-                                SendData(new byte[] { 10, 10 });
+                            catch (Exception e) {
+                                SendData(new byte[] {10, 10});
+                                //Console.WriteLine(e.ToString());
+                         
                             }
                             break;
                         default:
@@ -386,15 +393,24 @@ namespace Hackerman
                             string[] command = input.ToLower().Split(' ');
                             byte magnitude = 1;
                             byte[] formattedByte = new byte[command.Length < 2 ? default(int) + 3 : Decoder.Encode(command[1]).Length+3];
+                            byte[] chars = new byte[1];
+                            int tempint;
+
+                            if (command.Length > 1)
+                            {
+                                chars = Decoder.Encode(command[1]);
+                            }
                             switch (command[0])
                             {
 
                                 case "attack":
-                                    Byte.TryParse(command[2], out magnitude);
+                                    Int32.TryParse(command[2], out tempint);
+                                    tempint = Math.Max(tempint, -128);
+                                    tempint = Math.Min(tempint, 127);
+                                    magnitude = (byte)(tempint + 128);
                                     formattedByte[0] = 6;
                                     formattedByte[1] = magnitude;
                                     formattedByte[2] = (byte)command[1].Length;
-                                    byte[] chars = Decoder.Encode(command[1]);
                                     Console.WriteLine(formattedByte.Length);
                                     Console.WriteLine(chars.Length);
                                     for(int i = 0; i < chars.Length; i++)
@@ -404,8 +420,20 @@ namespace Hackerman
                                     SendData(formattedByte) ;
                                     break;
                                 case "strengthen":
-                                    Byte.TryParse(command[2], out magnitude);
-                                    SendData(new byte[] { 7, magnitude });
+                                    Int32.TryParse(command[2], out tempint);
+                                    tempint = Math.Max(tempint, -128);
+                                    tempint = Math.Min(tempint, 127);
+                                    magnitude = (byte)(tempint + 128);
+                                    formattedByte[0] = 7;
+                                    formattedByte[1] = magnitude;
+                                    formattedByte[2] = (byte)command[1].Length;
+                                    Console.WriteLine(formattedByte.Length);
+                                    Console.WriteLine(chars.Length);
+                                    for (int i = 0; i < chars.Length; i++)
+                                    {
+                                        formattedByte[i + 2] = chars[i];
+                                    }
+                                    SendData(formattedByte);
                                     break;
                                 case "scan":
                                     SendData(new byte[] { 5 });

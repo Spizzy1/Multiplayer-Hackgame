@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -337,6 +338,7 @@ public class Room
         {
             client.Write(new byte[] { 3, 2 });
         }
+        ManageGame();
 
     }
     void ManageGame()
@@ -344,13 +346,38 @@ public class Room
         while (!_shuttingDown)
         {
             Thread.Sleep(2000);
-            foreach(Strengthen strength in tasks.getCopyOfInternalList())
+            Console.WriteLine("Doing attackloop");
+            try
             {
-                strength.effect();
+                foreach (Connection connection in _handler.ConnectedComputers.getCopyOfInternalList())
+                {
+                    List<Process> unprocessedList = tasks.getCopyOfInternalList().Where(x => x.Connection == connection && x.GetType() == typeof(Strengthen)).ToList();
+                    List<Strengthen> list = new List<Strengthen>();
+                    for(int i = 0; i < unprocessedList.Count; i++)
+                    {
+                        list.Add((Strengthen)unprocessedList[i]);
+                    }
+                    list = list.OrderByDescending(x => x.Cost).OrderByDescending(x => x.positive).ToList();
+                    int amount = 0;
+                    for(int i =0; i < list.Count; i++)
+                    {
+                        amount += list[i].Cost * ((-1 * Convert.ToByte(!list[i].positive)) + Convert.ToByte(list[i].positive));
+                    }
+                    Console.WriteLine(amount);
+                    if(list.Count > 0)
+                    {
+                        connection.strength = Math.Clamp(amount, 0, 100);
+                    }
+                }
+                foreach (Attack attack in tasks.getCopyOfInternalList().Where(x => x.GetType() == typeof(Attack)).ToList())
+                {
+                    Console.WriteLine("Attack!!");
+                    attack.effect();
+                }
             }
-            foreach(Attack attack in tasks.getCopyOfInternalList())
+            catch (Exception e)
             {
-                attack.effect();
+                Console.WriteLine(e);
             }
         }
     }
@@ -417,7 +444,7 @@ public class Room
             {
                 c?.writeMsg($"{client.Name} has joined the room!");
             }
-            ConnectedClient addClient = new ConnectedClient(client.connection, _handler, ref tasks);
+            ConnectedClient addClient = new ConnectedClient(client.connection, _handler, this);
             addClient.Name = client.Name;
             _clients.Add(addClient);
             return true;
@@ -537,12 +564,12 @@ public class Room
     }
     internal class ConnectedClient : Client
     {
-        public ConnectedClient(TcpClient client, ConnectionHandler handler, ref SafeList<Process> actions) : base(client)
+        public ConnectedClient(TcpClient client, ConnectionHandler handler, Room room) : base(client)
         {
             _client = client;
             _ownedComputers = new List<Computer>();
             _handler = handler;
-            _actions = actions;
+            currentRoom = room;
         }
         public void writeClient(byte instruction)
         {
@@ -570,6 +597,16 @@ public class Room
                         int readData = _stream.Read(_data, 0, _data.Length);
                         if (readData > 0)
                         {
+                            byte magnitude = Math.Clamp(_data[1], (byte)1, (byte)100);
+                            byte[] decode = new byte[_data.Length - 2];
+
+                            for (int i = 0; i < decode.Length; i++)
+                            {
+                                decode[i] = _data[i + 2];
+                            }
+                            Computer? target = _handler.GetComputers(ConnectedComputer).Where(x => x.Name.ToLower() == Server.Decoder.Decode(decode)).ToList().FirstOrDefault();
+                            Connection? targetConnection = _handler.GetConnections(ConnectedComputer).Where(x => x.Computers.Contains(target)).FirstOrDefault();
+
                             switch (_data[0])
                             {
                                 case 23:
@@ -587,27 +624,19 @@ public class Room
                                 case 6:
                                     try
                                     {
-                                        byte magnitude = _data[1];
-                                        byte[] decode = new byte[_data.Length - 2];
-                                        for(int i = 0; i < decode.Length; i++)
-                                        {
-                                            decode[i] = _data[i+2];
-                                        }
                  
-                                        Computer? target = _handler.GetComputers(ConnectedComputer).Where(x => x.Name.ToLower() == Server.Decoder.Decode(decode)).ToList().FirstOrDefault();
-                                        Connection? targetConnection = _handler.GetConnections(ConnectedComputer).Where(x => x.Computers.Contains(target)).FirstOrDefault();
                                         Console.WriteLine(target != null);
                                         Console.WriteLine(targetConnection != null);
-                                        if (target != null && targetConnection != null)
+                                        if (target != null && targetConnection != null && _data[1] != 0)
                                         {
                                             Attack attack = new Attack(targetConnection, this._ownedComputers[0], target, _data[1]);
-                                            _actions.Add(attack);
+                                            currentRoom.tasks.Add(attack);
                                             this.writeMsg(attack.Subject.Name);
                                             this.writeMsg(attack.Target.Name);
                                         }
                                         else
                                         {
-                                            writeMsg("Target computer is unavailable");
+                                            writeMsg("Target computer is unavailable or you tried to do a 0 cost task");
                                         }
                                         Write(new byte[] { 3, 2 });
 
@@ -618,6 +647,32 @@ public class Room
                                     }
                                     break;
                                 case 7:
+                                    try
+                                    {
+                                        Console.WriteLine(target != null);
+                                        Console.WriteLine(targetConnection != null);
+                                        sbyte value = (sbyte)(_data[1] - 128);
+                                        if (target != null && targetConnection != null && value != 0)
+                                        {
+                                            Strengthen attack = new Strengthen(targetConnection, this._ownedComputers[0], target, Math.Abs(value), (value / Math.Abs(value) == 1));
+                                            currentRoom.tasks.Add(attack);
+                                            this.writeMsg(attack.Subject.Name);
+                                            this.writeMsg(attack.Target.Name);
+                                        }
+                                        else
+                                        {
+                                            writeMsg("Target computer is unavailable or you tried to do a 0 cost task");
+                                        }
+                                        Write(new byte[] { 3, 2 });
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(ex.ToString());
+                                    }
+                                    for (int i = 0; i < decode.Length; i++)
+                                    {
+                                        decode[i] = _data[i + 2];
+                                    }
                                     break;
                                 case 8:
                                     break;
@@ -642,7 +697,7 @@ public class Room
         public TcpClient Client { get { return _client; } }
         List<Computer> _ownedComputers;
         private Computer _connectedComputer;
-        SafeList<Process> _actions;
+        Room currentRoom;
         public Computer ConnectedComputer { get { return _connectedComputer; } set { _connectedComputer = value; } }
         ConnectionHandler _handler;
         public List<Computer> Computers { get { return _ownedComputers; } }
@@ -699,6 +754,7 @@ public class Room
             Connection.strength += Cost * (Convert.ToByte(!_positive) + ((-1) * Convert.ToByte(_positive)));
         }
         bool _positive;
+        public bool positive { get { return _positive; } }
     }
     void checkConnection()
     {
