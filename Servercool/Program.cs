@@ -604,12 +604,13 @@ public class Room
                                             _actions.Add(attack);
                                             this.writeMsg(attack.Subject.Name);
                                             this.writeMsg(attack.Target.Name);
-                                            Write(new byte[] { 3, 2 });
                                         }
                                         else
                                         {
                                             writeMsg("Target computer is unavailable");
                                         }
+                                        Write(new byte[] { 3, 2 });
+
                                     }
                                     catch (Exception ex)
                                     {
