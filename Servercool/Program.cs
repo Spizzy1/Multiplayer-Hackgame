@@ -593,15 +593,7 @@ public class Room
                                         {
                                             decode[i] = _data[i+2];
                                         }
-                    
-                                        foreach (Computer computer in _handler.GetComputers(ConnectedComputer))
-                                        {
-                                            Console.WriteLine(Server.Decoder.Decode(decode) +"d");
-                                            Console.WriteLine(computer.Name+ "d");
-                                            Console.WriteLine(computer.Name.Equals(Server.Decoder.Decode(decode)));
-                                            Console.WriteLine(Server.Decoder.Decode(decode) + "d");
-                                            Console.WriteLine(computer.Name + "d");
-                                        }
+                 
                                         Computer? target = _handler.GetComputers(ConnectedComputer).Where(x => x.Name.ToLower() == Server.Decoder.Decode(decode)).ToList().FirstOrDefault();
                                         Connection? targetConnection = _handler.GetConnections(ConnectedComputer).Where(x => x.Computers.Contains(target)).FirstOrDefault();
                                         Console.WriteLine(target != null);
@@ -613,6 +605,10 @@ public class Room
                                             this.writeMsg(attack.Subject.Name);
                                             this.writeMsg(attack.Target.Name);
                                             Write(new byte[] { 3, 2 });
+                                        }
+                                        else
+                                        {
+                                            writeMsg("Target computer is unavailable");
                                         }
                                     }
                                     catch (Exception ex)

@@ -11,7 +11,7 @@ namespace Server
         public static string Decode(byte[] input)
         {
             UTF8Encoding Encoding = new UTF8Encoding();
-            return Encoding.GetString(input);
+            return Encoding.GetString(input.Where(x => x != 00).ToArray());
         }
         public static byte[] Encode(string input)
         {
