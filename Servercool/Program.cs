@@ -119,6 +119,11 @@ void readServer(Client client)
                                 }
                             }
                             break;
+                        case 3:
+                            client.writeMsg("Refreshing... \n");
+                            writeServer(client, (byte)69);
+                            client.Write(new byte[] { 3, 1 });
+                            break;
                         case 69:
                             client.Name = "";
                             foreach (char character in client.DecodeRAW(_data))
@@ -126,6 +131,10 @@ void readServer(Client client)
                                 if (character != ' ')
                                 {
                                     client.Name += character;
+                                }
+                                else
+                                {
+                                    client.Name += '-';
                                 }
                             }
                             client.writeMsg("Welcome! " + client.Name);
@@ -320,7 +329,7 @@ public class Room
             {
                 Task.Run(client.readRoom);
                 Computer clientOwn = new Computer(client.Name);
-                client.Computers.Add(clientOwn);
+                client.Computer = clientOwn;
                 totalComputers.Add(clientOwn);
                 client.ConnectedComputer = clientOwn;
             }
@@ -343,9 +352,12 @@ public class Room
     }
     void ManageGame()
     {
+        //Grace period
+        Thread.Sleep(10000);
+        _state = RoomState.playing;
         while (!_shuttingDown)
         {
-            Thread.Sleep(2000);
+            Thread.Sleep(5000);
             Console.WriteLine("Doing attackloop");
             try
             {
@@ -366,7 +378,7 @@ public class Room
                     Console.WriteLine(amount);
                     if(list.Count > 0)
                     {
-                        connection.strength = Math.Clamp(amount, 0, 100);
+                        connection.strength = Math.Clamp(connection.strength + (amount*0.2f), 0, 100);
                     }
                 }
                 foreach (Attack attack in tasks.getCopyOfInternalList().Where(x => x.GetType() == typeof(Attack)).ToList())
@@ -463,7 +475,10 @@ public class Room
             try
             {
                 c.writeMsg(client.Name + " has disconnected.");
-                c.Write(new byte[] { 3 });
+                if(_state != RoomState.playing)
+                {
+                    c.Write(new byte[] { 3 });
+                }
             }
             catch (Exception ex)
             {
@@ -487,7 +502,7 @@ public class Room
                 _name = random.Next().ToString();
             }
         }
-        public void ChangeHP(int amount)
+        public void ChangeHP(float amount)
         {
             _health = Math.Clamp(_health - amount, 0, 100);
             if(_health == 0)
@@ -495,10 +510,10 @@ public class Room
                 //Add later
             }
         }
-        private int _health;
-        public int Health { get { return _health; } }
+        private float _health;
+        public float Health { get { return _health; } }
         private int _resources;
-        public int Resources { get { return _resources; } set { Math.Clamp(value, 0, 100); } }
+        public int Resources { get { return _resources; } set { _resources = Math.Clamp(value, 0, 100); } }
 
         string _name;
         public string Name { get { return _name; } }
@@ -541,6 +556,9 @@ public class Room
             }
             return computers;
         }
+        public Connection? GetConnection(Computer computer, Computer computer2) {
+            return ConnectedComputers.getCopyOfInternalList().Where(x => x.Computers.Contains(computer) && x.Computers.Contains(computer2)).FirstOrDefault();
+        }
         public List<Connection> GetConnections(Computer computer) {
             return ConnectedComputers.getCopyOfInternalList().Where(x => x.Computers.Contains(computer)).ToList();
         }
@@ -554,22 +572,23 @@ public class Room
             computers = new Computer[2];
             computers[0] = computer1;
             computers[1] = computer2;
-            _strength = 1;
+            _strength = 0;
         }
         private Computer[] computers;
         public Computer[] Computers { get { return computers; } }
 
-        private int _strength;
-        public int strength { get { return _strength; } set { _strength = Math.Clamp(value, 0, 100); } }
+        private float _strength;
+        public float strength { get { return _strength; } set { _strength = Math.Clamp(value, 0, 100); } }
     }
     internal class ConnectedClient : Client
     {
         public ConnectedClient(TcpClient client, ConnectionHandler handler, Room room) : base(client)
         {
             _client = client;
-            _ownedComputers = new List<Computer>();
+            HomeComputer = new Computer();
             _handler = handler;
             currentRoom = room;
+            processSave = new List<Process>();
         }
         public void writeClient(byte instruction)
         {
@@ -618,6 +637,7 @@ public class Room
                                 case 5:
                                     foreach (Computer computer in _handler.GetComputers(ConnectedComputer)) {
                                         writeMsg(computer.Name);
+                                        writeMsg("Connection strength: " + (String.Format(_handler.GetConnection(ConnectedComputer, computer)?.strength % 1 == 0 ? "{0:0}" : "{0:0.0#}", _handler.GetConnection(ConnectedComputer, computer)?.strength) ?? "N/A\n" ));
                                     }
                                     Write(new byte[] { 3, 2 });
                                     break;
@@ -629,10 +649,17 @@ public class Room
                                         Console.WriteLine(targetConnection != null);
                                         if (target != null && targetConnection != null && _data[1] != 0)
                                         {
-                                            Attack attack = new Attack(targetConnection, this._ownedComputers[0], target, _data[1]);
-                                            currentRoom.tasks.Add(attack);
-                                            this.writeMsg(attack.Subject.Name);
-                                            this.writeMsg(attack.Target.Name);
+                                            if (_data[1] <= HomeComputer.Resources)
+                                            {
+                                                Attack attack = new Attack(targetConnection, this.HomeComputer, target, _data[1]);
+                                                currentRoom.tasks.Add(attack);
+                                                writeMsg("Attacking with a power of: " + _data[1]);
+                                            }
+                                            else
+                                            {
+                                                writeMsg("You do not have enough resources to perform this task.");
+                                            }
+
                                         }
                                         else
                                         {
@@ -654,10 +681,16 @@ public class Room
                                         sbyte value = (sbyte)(_data[1] - 128);
                                         if (target != null && targetConnection != null && value != 0)
                                         {
-                                            Strengthen attack = new Strengthen(targetConnection, this._ownedComputers[0], target, Math.Abs(value), (value / Math.Abs(value) == 1));
-                                            currentRoom.tasks.Add(attack);
-                                            this.writeMsg(attack.Subject.Name);
-                                            this.writeMsg(attack.Target.Name);
+                                            if(Math.Abs(value) <= HomeComputer.Resources)
+                                            {
+                                                Strengthen attack = new Strengthen(targetConnection, this.HomeComputer, target, Math.Abs(value), (value / Math.Abs(value) == 1));
+                                                currentRoom.tasks.Add(attack);
+                                                writeMsg("Strengthening with a power of: " + value);
+                                            }
+                                            else
+                                            {
+                                                writeMsg("You do not have enough resources to perform this task.");
+                                            }
                                         }
                                         else
                                         {
@@ -675,6 +708,52 @@ public class Room
                                     }
                                     break;
                                 case 8:
+                                    int j = 0;
+                                    processSave = currentRoom.tasks.getCopyOfInternalList().Where(x => x.Subject == HomeComputer).ToList();
+                                    try
+                                    {
+                                        if(processSave.Count > 0)
+                                        {
+                                            foreach (Process process in processSave)
+                                            {
+                                                writeMsg($"{j}: {process.GetType().Name} | Target: {process.Target.Name} | cost: {process.Cost}");
+                                                j++;
+                                            }
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(ex.ToString());
+                                    }
+                                    Write(new byte[] { 3, 2 });
+                                    break;
+                                case 9:
+                                    if (_data[1] < processSave.Count)
+                                    {
+                                        processSave[_data[1]].kill();
+                                        currentRoom.tasks.Remove(processSave[_data[1]]);
+                                        writeMsg($"Killed process {_data[1]}");
+                                    }
+                                    else
+                                    {
+                                        writeMsg("Invalid index");
+                                    }
+                                    Write(new byte[] { 3, 2 });
+                                    break;
+                                case 11:
+                                    writeMsg($"Health: {String.Format(HomeComputer.Health % 1 == 0 ? "{0:0}" : "{0:0.0##}", HomeComputer.Health)}\nResources: {HomeComputer.Resources}");
+                                    Write(new byte[] { 3, 2 });
+                                    break;
+                                case 12:
+                                    int amount = 0;
+                                    foreach(Process process in currentRoom.tasks.getCopyOfInternalList().Where(x => x.Subject == HomeComputer))
+                                    {
+                                        amount++;
+                                        process.kill();
+                                        currentRoom.tasks.Remove(process);
+                                    }
+                                    writeMsg($"Killed {amount} processes");
+                                    Write(new byte[] { 3, 2 });
                                     break;
                                 case 200:
                                     Console.WriteLine("Client alive");
@@ -695,12 +774,13 @@ public class Room
         }
         private TcpClient _client;
         public TcpClient Client { get { return _client; } }
-        List<Computer> _ownedComputers;
+        Computer HomeComputer;
         private Computer _connectedComputer;
         Room currentRoom;
+        List<Process> processSave;
         public Computer ConnectedComputer { get { return _connectedComputer; } set { _connectedComputer = value; } }
         ConnectionHandler _handler;
-        public List<Computer> Computers { get { return _ownedComputers; } }
+        public Computer Computer { get { return HomeComputer; } set { HomeComputer = value; } }
 
     }
     internal class Process
@@ -711,6 +791,7 @@ public class Room
             _subject = subject;
             _target = target;
             _cost = cost;
+            subject.Resources -= Cost;
         }
         private Connection _connection;
         public Connection Connection { get { return _connection; } }
@@ -722,7 +803,7 @@ public class Room
         public int Cost { get { return _cost; } }
         public virtual void kill()
         {
-            _subject.Resources -= Cost;
+            _subject.Resources += Cost;
         }
         public virtual void effect()
         {
@@ -732,13 +813,14 @@ public class Room
     internal class Attack : Process
     {
         public Attack(Connection connection, Computer subject, Computer target, int cost) : base(connection, subject, target, cost)
-        { 
+        {
 
         }
+
         public override void effect()
         {
             base.effect();
-            Target.ChangeHP(Cost * Connection.strength);
+            Target.ChangeHP((Cost*0.25f) * Connection.strength);
         }
     }
     internal class Strengthen : Process
@@ -748,11 +830,6 @@ public class Room
             _positive = positive;
         }
 
-        public override void effect()
-        {
-            base.effect();
-            Connection.strength += Cost * (Convert.ToByte(!_positive) + ((-1) * Convert.ToByte(_positive)));
-        }
         bool _positive;
         public bool positive { get { return _positive; } }
     }

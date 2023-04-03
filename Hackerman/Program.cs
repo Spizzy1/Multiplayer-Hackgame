@@ -25,9 +25,11 @@ namespace Hackerman
                 Console.Clear();
                 MainMenu();
 
+                //Separated into functions for ease of use
                 void MainMenu()
                 {
                 begin:
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.Clear();
                     Console.WriteLine("Welcome: " + Username + " to test P2P hacking game");
                     Console.WriteLine("Do you want to check information, create a session or join a session?");
@@ -35,6 +37,7 @@ namespace Hackerman
                     Console.WriteLine("information: inf, info or information");
                     string command = Console.ReadLine().ToLower();
 
+                    //Handles inputs
                     if (command != "j" && command != "join" && command != "inf" && command != "info" && command != "information")
                     {
                         Console.Clear();
@@ -76,8 +79,6 @@ namespace Hackerman
                 }
                 void CreateSession()
                 {
-                    Console.WriteLine("dhaouwdawouh");
-                    Thread.Sleep(1000);
                     string dir = Directory.GetCurrentDirectory();
                     /*Process pr = new Process();
                     pr.StartInfo.FileName = Path.Combine(dir + @"\Output.exe");
@@ -371,6 +372,10 @@ namespace Hackerman
                                     byte.TryParse(indexString, out indexByte);
                                     SendData(new byte[] { 2, 2, indexByte });
                                 }
+                                else if (input.ToLower().Contains("refresh"))
+                                {
+                                    SendData(new byte[] { 3 });
+                                }
                                 else
                                 {
                                     SendData(new byte[] { 10, 10 });
@@ -390,57 +395,81 @@ namespace Hackerman
                             break;
 
                         case 2:
-                            string[] command = input.ToLower().Split(' ');
-                            byte magnitude = 1;
-                            byte[] formattedByte = new byte[command.Length < 2 ? default(int) + 3 : Decoder.Encode(command[1]).Length+3];
-                            byte[] chars = new byte[1];
-                            int tempint;
-
-                            if (command.Length > 1)
+                            try
                             {
-                                chars = Decoder.Encode(command[1]);
+                                string[] command = input.ToLower().Split(' ');
+                                byte magnitude = 1;
+                                byte[] formattedByte = new byte[command.Length < 2 ? default(int) + 3 : Decoder.Encode(command[1]).Length + 3];
+                                byte[] chars = new byte[1];
+                                int tempint;
+
+                                if (command.Length > 1)
+                                {
+                                    chars = Decoder.Encode(command[1]);
+                                }
+                                switch (command[0])
+                                {
+
+                                    case "attack":
+                                        Byte.TryParse(command[2], out magnitude);
+                                        formattedByte[0] = 6;
+                                        formattedByte[1] = magnitude;
+                                        formattedByte[2] = (byte)command[1].Length;
+                                        Console.WriteLine(formattedByte.Length);
+                                        Console.WriteLine(chars.Length);
+                                        for (int i = 0; i < chars.Length; i++)
+                                        {
+                                            formattedByte[i + 2] = chars[i];
+                                        }
+                                        SendData(formattedByte);
+                                        break;
+                                    case "strengthen":
+                                        Int32.TryParse(command[2], out tempint);
+                                        tempint = Math.Max(tempint, -128);
+                                        tempint = Math.Min(tempint, 127);
+                                        magnitude = (byte)(tempint + 128);
+                                        formattedByte[0] = 7;
+                                        formattedByte[1] = magnitude;
+                                        formattedByte[2] = (byte)command[1].Length;
+                                        Console.WriteLine(formattedByte.Length);
+                                        Console.WriteLine(chars.Length);
+                                        for (int i = 0; i < chars.Length; i++)
+                                        {
+                                            formattedByte[i + 2] = chars[i];
+                                        }
+                                        SendData(formattedByte);
+                                        break;
+                                    case "scan":
+                                        SendData(new byte[] { 5 });
+                                        break;
+                                    case "tasks":
+                                        SendData (new byte[] { 8 });
+                                        break;
+                                    case "kill":
+                                        if(Byte.TryParse(command[1], out magnitude))
+                                        {
+                                            SendData (new byte[] { 9, magnitude });
+                                        }
+                                        else if (command[1] == "-a")
+                                        {
+                                            SendData(new byte[] { 12 });
+                                        }
+                                        else
+                                        {
+                                            SendData(new byte[] { 10, 10 });
+                                        }
+                                        break;
+                                    case "status":
+                                        SendData(new byte[] { 11 });
+                                        break;
+                                    default:
+                                        SendData(new byte[] { 10, 10 });
+                                        break;
+                                }
                             }
-                            switch (command[0])
+                            catch (Exception e)
                             {
-
-                                case "attack":
-                                    Int32.TryParse(command[2], out tempint);
-                                    tempint = Math.Max(tempint, -128);
-                                    tempint = Math.Min(tempint, 127);
-                                    magnitude = (byte)(tempint + 128);
-                                    formattedByte[0] = 6;
-                                    formattedByte[1] = magnitude;
-                                    formattedByte[2] = (byte)command[1].Length;
-                                    Console.WriteLine(formattedByte.Length);
-                                    Console.WriteLine(chars.Length);
-                                    for(int i = 0; i < chars.Length; i++)
-                                    {
-                                        formattedByte[i+2] = chars[i];
-                                    }
-                                    SendData(formattedByte) ;
-                                    break;
-                                case "strengthen":
-                                    Int32.TryParse(command[2], out tempint);
-                                    tempint = Math.Max(tempint, -128);
-                                    tempint = Math.Min(tempint, 127);
-                                    magnitude = (byte)(tempint + 128);
-                                    formattedByte[0] = 7;
-                                    formattedByte[1] = magnitude;
-                                    formattedByte[2] = (byte)command[1].Length;
-                                    Console.WriteLine(formattedByte.Length);
-                                    Console.WriteLine(chars.Length);
-                                    for (int i = 0; i < chars.Length; i++)
-                                    {
-                                        formattedByte[i + 2] = chars[i];
-                                    }
-                                    SendData(formattedByte);
-                                    break;
-                                case "scan":
-                                    SendData(new byte[] { 5 });
-                                    break;
-                                default:
-                                    SendData(new byte[] { 10, 10 });
-                                    break;
+                                SendData(new byte[] { 10, 10 });
                             }
                             break;
                     }
