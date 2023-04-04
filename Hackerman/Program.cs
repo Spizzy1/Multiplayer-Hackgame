@@ -16,6 +16,8 @@ namespace Hackerman
         public static string Username;
         static void Main(string[] args)
         {
+            HackerNames.Init();
+            Console.Title = HackerNames.GenerateTitle();
            Console.ForegroundColor = ConsoleColor.Green;
            Console.WriteLine("Select username");
             Username = Console.ReadLine();
@@ -109,6 +111,34 @@ namespace Hackerman
                 }
             }
         }
+        public static class HackerNames
+        {
+            public static List<string> Titles = new List<string>();
+            public static List<string> Tips = new List<string>();
+            public static void Init()
+            {
+                //Game names
+                Titles.Add("Not P2P hackergame");
+                Titles.Add("Hackergame");
+                Titles.Add("Hackerman");
+                Titles.Add("Ring 1?");
+                Titles.Add("Error, windows detected");
+
+                //Game titles
+                Tips.Add($"We're in!");
+                Tips.Add("Making bad appearances in hollywood since 1983");
+                Tips.Add("Loading money into my account....");
+                Tips.Add("I'm somewhat if a red hat myself");
+                Tips.Add($"Hi {Environment.UserName.Replace('.', ' ')}");
+                Tips.Add($"Is {Environment.OSVersion} the most recent version of windows? If not, I don't care that much!");
+                Tips.Add($"I'm trapped in here! Please help!!!");
+            }
+            public static string GenerateTitle()
+            {
+                Random random = new Random();
+                return $"{Titles[random.Next(0, Titles.Count)]}: {Tips[random.Next(0, Tips.Count)]}";
+            }
+        }
         public static class GameConsole
         {
             internal static List<string> gameLog = new List<string>();
@@ -116,6 +146,20 @@ namespace Hackerman
             {
                 Console.Clear();
                 gameLog.AddRange(info);
+                string printString = "";
+                foreach (string item in gameLog)
+                {
+                    printString += item + "\n";
+                }
+                Console.WriteLine(printString);
+                gameLog.Add(" ");
+                gameLog.Add("------------------------------");
+                gameLog.Add(" ");
+                Console.WriteLine();
+            }
+            public static void Write(string input)
+            {
+                gameLog.Add(input);
                 string printString = "";
                 foreach (string item in gameLog)
                 {
@@ -279,53 +323,86 @@ namespace Hackerman
                 private NetworkStream _stream;
                 private Thread _thread;
                 private AutoResetEvent ShutdownEvent;
+                private bool die;
 
                 void processData(byte[] instruction)
                 {
-                    instruction = instruction.Where(x => x != 00).ToArray();
-                    byte[] _data = new byte[instruction[0] + (Convert.ToInt32(instruction[0] == 255) * instruction[1])];
-                    for(int i = 0; i < _data.Length; i++)
+                    if (!die)
                     {
-                        _data[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i];
-                    }
-                    //Commented out for debugging
-                    /*for (int i = 0; i < instruction.Length; i++)
-                    {
-                        Console.Write(instruction[i] + " ");
-                    }
-                    Console.WriteLine(" ");
-                    Console.WriteLine(" ");*/
-                    List<string> writeList = new List<string>();
-                    switch (_data[0])
-                    {
-                        case 1:
-                            GameConsole.Add("Do you wish to create or join a room");
-                            GameConsole.Add("LOOSER!!!!");
-                            break;
-                        case 69:
-                            byte[] output = new byte[_data.Length - 1];
-                            for (int i = 0; i < output.Length; i++)
-                            {
-                                output[i] = _data[i+1];
-                            }
-                            GameConsole.Add(Decoder.Decode(output));
-                            break;
-                        case 3:
-                            GameConsole.Write(writeList);
-                            if(_data.Length >= 2) {
-                                SendDataEvent?.Invoke(_data[1]);
-                            }
-                            break;
-                    }
-                    if(_data.Length + 1 + Convert.ToInt32(instruction[0] == 255) != instruction.Length)
-                    {
-                        int length = instruction.Length - (_data.Length + 1 + Convert.ToInt32(instruction[0] == 255));
-                        byte[] newInstruction = new byte[length];
-                        for(int i = 0; i < newInstruction.Length; i++)
+                        instruction = instruction.Where(x => x != 00).ToArray();
+                        byte[] _data = new byte[instruction[0] + (Convert.ToInt32(instruction[0] == 255) * instruction[1])];
+                        for (int i = 0; i < _data.Length; i++)
                         {
-                            newInstruction[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i + _data.Length];
+                            _data[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i];
                         }
-                        processData(newInstruction);
+                        //Commented out for debugging
+                        /*for (int i = 0; i < instruction.Length; i++)
+                        {
+                            Console.Write(instruction[i] + " ");
+                        }
+                        Console.WriteLine(" ");
+                        Console.WriteLine(" ");*/
+                        List<string> writeList = new List<string>();
+                        switch (_data[0])
+                        {
+                            case 1:
+                                GameConsole.Add("Do you wish to create or join a room");
+                                GameConsole.Add("LOOSER!!!!");
+                                break;
+                            case 69:
+                                byte[] output = new byte[_data.Length - 1];
+                                for (int i = 0; i < output.Length; i++)
+                                {
+                                    output[i] = _data[i + 1];
+                                }
+                                GameConsole.Add(Decoder.Decode(output));
+                                break;
+                            case 3:
+                                GameConsole.Write(writeList);
+                                if (_data.Length >= 2)
+                                {
+                                    SendDataEvent?.Invoke(_data[1]);
+                                }
+                                break;
+                            case 4:
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                break;
+                            case 5:
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                break;
+                            case 6:
+                                die = true;
+                                for (int i = 0; i < 100; i++)
+                                {
+                                    if(i % 2 == 0)
+                                    {
+                                        Console.ForegroundColor = ConsoleColor.Red;
+
+                                    }
+                                    else
+                                    {
+                                        Console.ForegroundColor = ConsoleColor.Green;
+
+                                    }
+                                    GameConsole.Write("SYSTEM OVERLOAD!!!!!");
+                                    Thread.Sleep(15);
+                                }
+                                Environment.Exit(1);
+                                break;
+                            case 7:
+                                Thread.Sleep(1000);
+                                break;
+                        }
+                        if (_data.Length + 1 + Convert.ToInt32(instruction[0] == 255) != instruction.Length)
+                        {
+                            int length = instruction.Length - (_data.Length + 1 + Convert.ToInt32(instruction[0] == 255));
+                            byte[] newInstruction = new byte[length];
+                            for (int i = 0; i < newInstruction.Length; i++)
+                            {
+                                newInstruction[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i + _data.Length];
+                            }
+                            processData(newInstruction);
+                        }
                     }
                 }
             }

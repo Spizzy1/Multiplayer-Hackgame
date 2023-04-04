@@ -385,6 +385,39 @@ public class Room
                 {
                     Console.WriteLine("Attack!!");
                     attack.effect();
+                    ConnectedClient? client = _clients.getCopyOfInternalList().Where(x => x.Computer == attack.Target).FirstOrDefault();
+                    if(client != null)
+                    {
+                        if (attack.Target.Health <= 20 && attack.Target.Health > 0)
+                        {
+                            client.Write(new byte[] { 5});
+                        }
+                        else if(attack.Target.Health <= 0)
+                        {
+                            client.Write(new byte[] { 3 });
+                            client.Write(new byte[] { 6 });
+                            client.connection.Close();
+                            playerDisconnect(client);
+                            if(_clients.Count >= 1)
+                            {
+                                foreach(ConnectedClient winningClients in _clients.getCopyOfInternalList())
+                                {
+                                    winningClients.writeMsg("You winner winner chicken dinner!!!");
+                                    winningClients.Write(new byte[] { 3 });
+                                    winningClients.Write(new byte[] { 7 });
+                                }
+
+                                Console.WriteLine("Room shutting down");
+                                _shuttingDown = true;
+                                RoomHandler.OnRoom?.Invoke(this, new RoomHandler.RoomDestroyArgs(this));
+
+                            }
+                        }
+                        else
+                        {
+                            client.Write(new byte[] { 4});
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -820,7 +853,7 @@ public class Room
         public override void effect()
         {
             base.effect();
-            Target.ChangeHP((Cost*0.25f) * Connection.strength);
+            Target.ChangeHP((Cost*0.025f) * Connection.strength);
         }
     }
     internal class Strengthen : Process
