@@ -816,15 +816,24 @@ public class Room
         public Computer Computer { get { return HomeComputer; } set { HomeComputer = value; } }
 
     }
-    internal class Process
+    internal class TemplateProcess
     {
-        public Process(Connection connection, Computer subject, Computer target, int cost)
+        public TemplateProcess(Computer computer, int cost)
+        {
+            _computer = computer;
+            _cost = cost;
+            computer.Resources -= cost;
+        }
+        internal int _cost;
+        internal Computer _computer;
+    }
+    internal class Process : TemplateProcess
+    {
+        public Process(Connection connection, Computer subject, Computer target, int cost) : base(subject, cost)
         {
             _connection = connection;
             _subject = subject;
             _target = target;
-            _cost = cost;
-            subject.Resources -= Cost;
         }
         private Connection _connection;
         public Connection Connection { get { return _connection; } }
@@ -853,7 +862,7 @@ public class Room
         public override void effect()
         {
             base.effect();
-            Target.ChangeHP((Cost*0.025f) * Connection.strength);
+            Target.ChangeHP((Cost*0.075f) * Connection.strength);
         }
     }
     internal class Strengthen : Process
