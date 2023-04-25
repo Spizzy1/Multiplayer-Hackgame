@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Server;
 
+//Starts the server
 Console.WriteLine("Program started");
 SafeList<Room> rooms = new SafeList<Room>();
 Int32 port = 1300;
@@ -19,6 +20,7 @@ Thread waitConnection = new Thread(() => awaitConnection());
 
 waitConnection.Start();
 
+//Waits for clients to connect to it
 void awaitConnection()
 {
     RoomHandler.OnRoom += RemoveRoom;
@@ -28,6 +30,7 @@ void awaitConnection()
     {
         try
         {
+            //Prepares all threads needed to handle clients
             TcpClient client = server.AcceptTcpClient();
             Client player = new Client(client);
             Thread readClient = new Thread(() => readServer(player));
@@ -41,6 +44,8 @@ void awaitConnection()
     }
     server.Stop();
 }
+
+//Removes a room when a room sends the removeroom event
 void RemoveRoom(object sender, EventArgs e)
 {
     if(sender.GetType() == typeof(Room))
@@ -58,7 +63,7 @@ void RemoveRoom(object sender, EventArgs e)
     }
 }
 
-
+//Reading threads for clients before they enter a room
 void readServer(Client client)
 {
     NetworkStream _stream = client.connection.GetStream();
@@ -67,6 +72,7 @@ void readServer(Client client)
         try
         {
             byte[] _data = new byte[255];
+            //If no data is there to be read... wait
             if (!client.connection.GetStream().DataAvailable)
             {
                 Thread.Sleep(1);
@@ -78,15 +84,19 @@ void readServer(Client client)
                 {
                     switch (_data[0])
                     {
+                        //Debug test thing
                         case 23:
                             Console.WriteLine("test recieved!!");
                             break;
+                        //Sends data back for the client to do stuff
                         case 1:
                             writeServer(client, 1);
                             break;
+                        //Handles creating room stuff
                         case 2:
                             if (_data.Length >= 2)
                             {
+                                //Stuff for creating rooms
                                 if (_data[1] == 1)
                                 {
 
@@ -95,6 +105,7 @@ void readServer(Client client)
                                     newRoom.initiate(client);
                                     return;
                                 }
+                                //Joining rooms
                                 else if(_data[1] == 2)
                                 {
                                     try
@@ -107,6 +118,7 @@ void readServer(Client client)
                                         }
                                         else
                                         {
+                                            //Refreshes if there is no rooms
                                             client.writeMsg("There was an issue trying to join the room, refreshing \n");
                                             writeServer(client, (byte)69);
                                             client.Write(new byte[] { 3, 1 });
@@ -120,11 +132,13 @@ void readServer(Client client)
                             }
                             break;
                         case 3:
+                            //Refreshes when you tell it to
                             client.writeMsg("Refreshing... \n");
                             writeServer(client, (byte)69);
                             client.Write(new byte[] { 3, 1 });
                             break;
                         case 69:
+                            //Formats username as a strings
                             client.Name = "";
                             foreach (char character in client.DecodeRAW(_data))
                             {
