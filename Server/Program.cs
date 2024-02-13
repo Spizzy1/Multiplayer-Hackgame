@@ -14,7 +14,7 @@ namespace Server
         static void Main(string[] args)
         {
             Console.WriteLine("Program started");
-            Int32 port = 1300;
+            Int32 port = 4660;
             IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
             // TcpListener server = new TcpListener(port);

@@ -11,7 +11,7 @@ using Server;
 
 Console.WriteLine("Program started");
 SafeList<Room> rooms = new SafeList<Room>();
-Int32 port = 1300;
+Int32 port = 4660;
 IPAddress localAddr = IPAddress.Any;
 
 TcpListener server = new TcpListener(localAddr, port);
@@ -538,10 +538,6 @@ public class Room
         public void ChangeHP(float amount)
         {
             _health = Math.Clamp(_health - amount, 0, 100);
-            if(_health == 0)
-            {
-                //Add later
-            }
         }
         private float _health;
         public float Health { get { return _health; } }

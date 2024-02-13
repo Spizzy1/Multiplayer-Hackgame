@@ -90,9 +90,9 @@ namespace Hackerman
                     Console.WriteLine("Trying to connect to server...");
                     try
                     {
-                        Int32 port = 1300;
+                        Int32 port = 4660;
                         Console.Clear();
-                        client = new Client(port, "130.61.171.190");
+                        client = new Client(port, "127.0.0.1");
                         Console.WriteLine("Connected to local server...");
                         Thread.Sleep(1000);
                     }
@@ -347,7 +347,6 @@ namespace Hackerman
                         {
                             case 1:
                                 GameConsole.Add("Do you wish to create or join a room");
-                                GameConsole.Add("LOOSER!!!!");
                                 break;
                             case 69:
                                 byte[] output = new byte[_data.Length - 1];
@@ -390,7 +389,10 @@ namespace Hackerman
                                 Environment.Exit(1);
                                 break;
                             case 7:
-                                Thread.Sleep(1000);
+                                Console.WriteLine("");
+                                Console.Write("You win, input to close...");
+                                Console.ReadLine();
+                                Environment.Exit(1);
                                 break;
                         }
                         if (_data.Length + 1 + Convert.ToInt32(instruction[0] == 255) != instruction.Length)

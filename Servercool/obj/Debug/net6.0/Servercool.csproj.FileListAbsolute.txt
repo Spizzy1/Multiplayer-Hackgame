@@ -1,0 +1,15 @@
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\bin\Debug\net6.0\Servercool.exe
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\bin\Debug\net6.0\Servercool.deps.json
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\bin\Debug\net6.0\Servercool.runtimeconfig.json
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\bin\Debug\net6.0\Servercool.dll
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\bin\Debug\net6.0\Servercool.pdb
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.csproj.AssemblyReference.cache
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.AssemblyInfoInputs.cache
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.AssemblyInfo.cs
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.csproj.CoreCompileInputs.cache
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.dll
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\refint\Servercool.dll
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.pdb
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\Servercool.genruntimeconfig.cache
+C:\Users\isaka\source\repos\P2P-Hackgame\Servercool\obj\Debug\net6.0\ref\Servercool.dll
