@@ -16,11 +16,13 @@ namespace Hackerman
         public static string Username;
         static void Main(string[] args)
         {
-            HackerNames.Init();
+            //Makes the funny title
+           HackerNames.Init();
             Console.Title = HackerNames.GenerateTitle();
            Console.ForegroundColor = ConsoleColor.Green;
            Console.WriteLine("Select username");
             Username = Console.ReadLine();
+            //Handles going into the games
             while (true)
             {
                 Client client = null;
@@ -111,6 +113,8 @@ namespace Hackerman
                 }
             }
         }
+
+        //Generates title
         public static class HackerNames
         {
             public static List<string> Titles = new List<string>();
@@ -139,8 +143,11 @@ namespace Hackerman
                 return $"{Titles[random.Next(0, Titles.Count)]}: {Tips[random.Next(0, Tips.Count)]}";
             }
         }
+
+        //Custom console used for the game (so I can creates nice looking logs and stuff)
         public static class GameConsole
         {
+            //Log of stuff written to the console
             internal static List<string> gameLog = new List<string>();
             public static void Write(List<string> info)
             {
@@ -196,6 +203,8 @@ namespace Hackerman
         public delegate void sendData(byte index);
 
         public static event sendData SendDataEvent;
+
+        //Class for client (disposable interface to make it slightly less unstable)
         public class Client : IDisposable
         {
 
@@ -208,8 +217,11 @@ namespace Hackerman
             // Consumers register to receive data.
             public event EventHandler<DataReceivedEventArgs> DataReceived;
 
+            //Constructor for client
             public Client(Int32 port, string IP)
             {
+
+                //Legacy code that was for a testing feature
                 //_output = new TcpClient("127.0.0.1", 3856);
                 _client = new TcpClient(IP, port);      
                 //_outPutStream = _output.GetStream();
@@ -221,6 +233,7 @@ namespace Hackerman
 
                 _receiver.DataReceived += OnDataReceived;
             }
+            //Pretty sure this happens auto-magically but you can never be too safe
             ~Client()
             {
                 Dispose();
@@ -234,7 +247,8 @@ namespace Hackerman
                 if (handler != null) DataReceived(this, e);  // re-raise event
             }
             private bool IsDisposed { get; set; }
-
+            
+            //Stuff that happens when client goes out of scope
             public void Dispose()
             {
                 if (!this.IsDisposed)
@@ -245,6 +259,8 @@ namespace Hackerman
                     this._stream = null;
                 }
             }
+
+            //Part of the class (responsible for handling things going into the client)
             private sealed class Receiver
             {
                 internal event EventHandler<DataReceivedEventArgs> DataReceived;
@@ -253,11 +269,13 @@ namespace Hackerman
                 {
 
                     _stream = stream;
+                    //Partitions thread to handle input
                     _thread = new Thread(Run);
                     _thread.Start();
                     ShutdownEvent = resetEv;
                 }
 
+                //Processes data
                 private void Run()
                 {
                     try
@@ -278,6 +296,7 @@ namespace Hackerman
                                 else
                                 {
 
+                                    //Basic formatting
                                     int readData = _stream.Read(_data, 0, _data.Length);
                                     if (readData > 0)
                                     {
@@ -325,12 +344,15 @@ namespace Hackerman
                 private AutoResetEvent ShutdownEvent;
                 private bool die;
 
+                //Formates data more thourughly and handles the formatted data
                 void processData(byte[] instruction)
                 {
                     if (!die)
                     {
+                        //Filters out empty noise
                         instruction = instruction.Where(x => x != 00).ToArray();
                         byte[] _data = new byte[instruction[0] + (Convert.ToInt32(instruction[0] == 255) * instruction[1])];
+                        //Makes sure that things don't go above the buffer (if so separates it into separate iterations)
                         for (int i = 0; i < _data.Length; i++)
                         {
                             _data[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i];
@@ -343,11 +365,14 @@ namespace Hackerman
                         Console.WriteLine(" ");
                         Console.WriteLine(" ");*/
                         List<string> writeList = new List<string>();
+
+                        //All the stuff the data is supposed to do
                         switch (_data[0])
                         {
                             case 1:
                                 GameConsole.Add("Do you wish to create or join a room");
                                 break;
+                            //String inputs
                             case 69:
                                 byte[] output = new byte[_data.Length - 1];
                                 for (int i = 0; i < output.Length; i++)
@@ -363,12 +388,15 @@ namespace Hackerman
                                     SendDataEvent?.Invoke(_data[1]);
                                 }
                                 break;
+                            //High health
                             case 4:
                                 Console.ForegroundColor = ConsoleColor.Green;
                                 break;
+                            //Low health
                             case 5:
                                 Console.ForegroundColor = ConsoleColor.Red;
                                 break;
+                            //Death
                             case 6:
                                 die = true;
                                 for (int i = 0; i < 100; i++)
@@ -403,19 +431,23 @@ namespace Hackerman
                             {
                                 newInstruction[i] = instruction[1 + Convert.ToInt32(instruction[0] == 255) + i + _data.Length];
                             }
+                            //Recoursive function for the newly formatted data (if there is more)
                             processData(newInstruction);
                         }
                     }
                 }
             }
 
+            //Sending data
             private sealed class Sender
             {
-
+                //Function for edge-cases (partitions data to the send thread)
                 internal void SendData(byte[] data)
                 {
                     _sendData = data;
                 }
+
+                //Formats data to make sending input as easy as possible
                 internal void SendPartial(byte index)
                 {
                     string input = GameConsole.Read();
@@ -564,6 +596,7 @@ namespace Hackerman
                     SendDataEvent += SendPartial;
                 }
 
+                //Sending data thread, checks if there is data to send and sends said data
                 private void Run()
                 {
                     byte length = (byte)Username.Length;
@@ -578,6 +611,8 @@ namespace Hackerman
                     outPut[1] = length;
                     nameArray.CopyTo(outPut, 2);
                     _stream.Write(outPut, 0, outPut.Length);
+
+                    //Shuts everything down if something goes wrong.... gracefully....
                     while (!ShutdownEvent.WaitOne(0))
                     {
                         if(_sendData != null)
